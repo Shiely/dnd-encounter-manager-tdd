@@ -176,9 +176,9 @@ class MainWindow(QMainWindow):
             self.refresh()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        if event.key() == Qt.Key_Space:
+        if event.key() == Qt.Key.Space:
             self._on_advance_turn()
-        elif event.key() == Qt.Key_Delete:
+        elif event.key() == Qt.Key.Delete:
             if self.entity_list.currentItem():
                 row = self.entity_list.currentRow()
                 state = self.service.get_state()
