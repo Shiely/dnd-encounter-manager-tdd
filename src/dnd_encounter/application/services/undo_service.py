@@ -17,6 +17,6 @@ class UndoService:
         cmd = self.undo_stack.pop()
         if cmd:
             cmd.undo()
-        self.encounter_repo.save(None)  # placeholder
-        # In real version we'd return proper DTO
+        # TODO: Save the actual encounter state
+        # self.encounter_repo.save(encounter)
         return EncounterStateDTO(encounter_id="", round_number=1)
