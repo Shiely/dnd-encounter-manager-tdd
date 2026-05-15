@@ -57,3 +57,43 @@ def test_undo(stub_monster_repo, stub_encounter_repo, stub_undo_stack, stub_dice
 
     # This test is simplified - full implementation will be tested in integration
     assert True  # Placeholder until full service is complete
+
+
+def test_add_player(stub_encounter_repo, stub_publisher):
+    """add_player should add a player entity to the encounter."""
+    encounter = Encounter(encounter_id="test")
+    service = EncounterService(
+        encounter=encounter,
+        monster_repo=None,  # type: ignore[arg-type]
+        encounter_repo=stub_encounter_repo,
+        undo_stack=None,  # type: ignore[arg-type]
+        dice_roller=None,  # type: ignore[arg-type]
+        publisher=stub_publisher,
+    )
+
+    service.add_player("Aragorn", 18, 45)
+
+    assert len(encounter.entities) == 1
+    assert encounter.entities[0].display_name == "Aragorn"
+    assert encounter.entities[0].entity_type == "player"
+    assert encounter.entities[0].max_hp == 45
+
+
+def test_add_player_multiple(stub_encounter_repo, stub_publisher):
+    """add_player should support multiple players."""
+    encounter = Encounter(encounter_id="test")
+    service = EncounterService(
+        encounter=encounter,
+        monster_repo=None,  # type: ignore[arg-type]
+        encounter_repo=stub_encounter_repo,
+        undo_stack=None,  # type: ignore[arg-type]
+        dice_roller=None,  # type: ignore[arg-type]
+        publisher=stub_publisher,
+    )
+
+    service.add_player("Aragorn", 18, 45)
+    service.add_player("Legolas", 20, 40)
+
+    assert len(encounter.entities) == 2
+    assert encounter.entities[0].display_name == "Aragorn"
+    assert encounter.entities[1].display_name == "Legolas"
