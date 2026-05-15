@@ -1,18 +1,22 @@
 # ui/main_window.py
 # Thin UI layer - only calls EncounterService and reacts to events
 
+from __future__ import annotations
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
     QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QKeyEvent
 
 from dnd_encounter.application.services.encounter_service import EncounterService
 from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
+from dnd_encounter.ui.add_player_dialog import AddPlayerDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, service: EncounterService):
+    def __init__(self, service: EncounterService) -> None:
         super().__init__()
         self.service = service
         self.setWindowTitle("D&D Encounter Manager")
@@ -41,11 +45,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.entity_list)
 
         btn_layout = QHBoxLayout()
-        self.btn_add = QPushButton("Add Monster")
-        self.btn_add.clicked.connect(self._on_add_monster)
+        self.btn_add_monster = QPushButton("Add Monster")
+        self.btn_add_monster.clicked.connect(self._on_add_monster)
+        self.btn_add_player = QPushButton("Add Player")
+        self.btn_add_player.clicked.connect(self._on_add_player)
         self.btn_advance = QPushButton("Advance Turn")
         self.btn_advance.clicked.connect(self._on_advance_turn)
-        btn_layout.addWidget(self.btn_add)
+        btn_layout.addWidget(self.btn_add_monster)
+        btn_layout.addWidget(self.btn_add_player)
         btn_layout.addWidget(self.btn_advance)
         layout.addLayout(btn_layout)
 
@@ -107,6 +114,15 @@ class MainWindow(QMainWindow):
                 self.service.add_monster(monster_id)
                 self.refresh()
 
+    def _on_add_player(self):
+        dialog = AddPlayerDialog(self)
+        if dialog.exec():
+            data = dialog.get_player_data()
+            if data:
+                name, initiative, max_hp = data
+                self.service.add_player(name, initiative, max_hp)
+                self.refresh()
+
     def _on_edit_hp(self):
         if not self.entity_list.currentItem():
             return
@@ -122,7 +138,7 @@ class MainWindow(QMainWindow):
         self.service.advance_turn()
         self.refresh()
 
-    def _show_context_menu(self, position):
+    def _show_context_menu(self, position: QPoint):
         item = self.entity_list.itemAt(position)
         if not item:
             return
@@ -159,7 +175,7 @@ class MainWindow(QMainWindow):
             self.service.change_initiative(instance_id, new_init)
             self.refresh()
 
-    def keyPressEvent(self, event):  # noqa: N802
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         if event.key() == Qt.Key_Space:
             self._on_advance_turn()
         elif event.key() == Qt.Key_Delete:
