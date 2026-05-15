@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - run: uv python install 3.12
+
+      - run: uv sync
+
+      - run: uv add --dev pyinstaller
+
+      - run: |
+          uv run pyinstaller \
+            --onefile --windowed \
+            src/dnd_encounter/main.py \
+            --name DndEncounterManager
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DndEncounterManager-macOS
+          path: dist/DndEncounterManager
