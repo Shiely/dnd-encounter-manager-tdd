@@ -1,6 +1,8 @@
 # tests/conftest.py
 import collections
 import pytest
+from unittest.mock import Mock
+
 from dnd_encounter.domain.entities.encounter import Encounter
 from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
 from dnd_encounter.application.commands.base_command import BaseCommand
