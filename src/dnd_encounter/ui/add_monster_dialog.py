@@ -1,12 +1,7 @@
 # ui/add_monster_dialog.py
 # Improved Add Monster dialog
 
-<<<<<<< HEAD
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel
-from PySide6.QtCore import Qt
-=======
 from __future__ import annotations
->>>>>>> 0c8c9102a87084225197fe00108560be42ed9ac8
 
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QWidget
 from PySide6.QtCore import Qt
