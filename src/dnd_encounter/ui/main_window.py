@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
         self.entity_list = QListWidget()
         self.entity_list.currentRowChanged.connect(self._on_entity_selected)
-        self.entity_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.entity_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.entity_list.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.entity_list)
 
