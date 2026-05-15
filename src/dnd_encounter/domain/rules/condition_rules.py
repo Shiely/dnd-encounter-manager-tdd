@@ -1,5 +1,5 @@
 # DOMAIN LAYER: stdlib imports only.
-from .value_objects.condition import Condition
+from ..value_objects.condition import Condition
 
 
 def toggle_condition(conditions: list[Condition], condition: Condition) -> list[Condition]:
