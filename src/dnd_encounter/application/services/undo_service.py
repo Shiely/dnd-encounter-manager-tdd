@@ -5,6 +5,7 @@ from src.dnd_encounter.ports.outbound.i_undo_stack import IUndoStack
 from src.dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
 from src.dnd_encounter.application.dto.encounter_dto import EncounterStateDTO
 
+
 @dataclass
 class UndoService:
     undo_stack: IUndoStack
@@ -12,9 +13,7 @@ class UndoService:
 
     def undo(self) -> EncounterStateDTO:
         if self.undo_stack.is_empty():
-            return EncounterStateDTO(
-                encounter_id="", round_number=1, error="Nothing to undo"
-            )
+            return EncounterStateDTO(encounter_id="", round_number=1, error="Nothing to undo")
         cmd = self.undo_stack.pop()
         if cmd:
             cmd.undo()

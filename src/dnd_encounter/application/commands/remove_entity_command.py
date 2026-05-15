@@ -5,6 +5,7 @@ from .base_command import BaseCommand
 from src.dnd_encounter.domain.entities.encounter import Encounter
 from src.dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
 
+
 @dataclass
 class RemoveEntityCommand(BaseCommand):
     encounter: Encounter

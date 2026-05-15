@@ -2,6 +2,7 @@
 import math
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class AbilityScores:
     str_: int

@@ -2,6 +2,7 @@
 from typing import Protocol
 from ...domain.entities.monster_definition import MonsterDefinition
 
+
 class IMonsterRepository(Protocol):
     def get(self, monster_id: str) -> MonsterDefinition | None: ...
     def list_all(self) -> list[MonsterDefinition]: ...

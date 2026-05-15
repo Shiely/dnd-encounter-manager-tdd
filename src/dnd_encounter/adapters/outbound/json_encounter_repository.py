@@ -10,6 +10,7 @@ APP_AUTHOR = "dnd-encounter-manager"
 
 ENCOUNTER_SAVE_PATH = Path(user_data_dir(APP_NAME, APP_AUTHOR)) / "encounter_save.json"
 
+
 class JsonEncounterRepository(IEncounterRepository):
     def __init__(self, path: Path | None = None):
         self.path = path or ENCOUNTER_SAVE_PATH

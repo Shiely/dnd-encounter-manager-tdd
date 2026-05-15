@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from src.dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
 
+
 @dataclass
 class ImportService:
     monster_repo: IMonsterRepository
@@ -28,7 +29,7 @@ class ImportService:
 
         for monster_data in data.get("monsters", []):
             # Simplified - in real version we'd use pydantic
-            monster = type('obj', (object,), monster_data)()  # placeholder
+            monster = type("obj", (object,), monster_data)()  # placeholder
             # Proper deserialization would happen here
             self.monster_repo.upsert(monster)  # type: ignore
             added += 1

@@ -1,6 +1,7 @@
 # DOMAIN LAYER: stdlib imports only.
 import enum
 
+
 class Condition(enum.Enum):
     BLINDED = "Blinded"
     CHARMED = "Charmed"

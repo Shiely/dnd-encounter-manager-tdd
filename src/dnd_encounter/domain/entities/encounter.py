@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from .encounter_entity import EncounterEntity
 
+
 @dataclass
 class Encounter:
     encounter_id: str

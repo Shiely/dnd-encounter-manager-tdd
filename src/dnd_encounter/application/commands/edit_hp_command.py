@@ -6,6 +6,7 @@ from src.dnd_encounter.domain.entities.encounter import Encounter
 from src.dnd_encounter.domain.rules.hp_rules import apply_hp_edit, is_auto_remove
 from src.dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
 
+
 @dataclass
 class EditHpCommand(BaseCommand):
     encounter: Encounter

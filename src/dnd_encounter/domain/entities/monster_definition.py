@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from .ability_scores import AbilityScores
 from .challenge_rating import ChallengeRating
 
+
 @dataclass
 class MonsterDefinition:
     id: str

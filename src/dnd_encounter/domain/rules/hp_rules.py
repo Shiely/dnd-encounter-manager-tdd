@@ -1,5 +1,6 @@
 # DOMAIN LAYER: stdlib imports only.
 
+
 def apply_hp_edit(current_hp: int, new_value: int) -> int:
     """Return clamped HP. Floor is 0. No upper clamp (temporary HP allowed).
     Invariant: only called from EditHpCommand.execute() and EditHpCommand.undo().

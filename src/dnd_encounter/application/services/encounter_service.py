@@ -18,6 +18,7 @@ from src.dnd_encounter.application.commands import (
     ChangeInitiativeCommand,
 )
 
+
 @dataclass
 class EncounterService:
     encounter: Encounter
@@ -32,17 +33,19 @@ class EncounterService:
         for i, e in enumerate(self.encounter.entities):
             if not e.is_active:
                 continue
-            entities.append(EntityRowDTO(
-                instance_id=e.instance_id,
-                display_name=e.display_name,
-                entity_type=e.entity_type,
-                initiative=e.initiative,
-                current_hp=e.current_hp,
-                max_hp=e.max_hp,
-                conditions=[c.value for c in e.conditions],
-                is_current_turn=(i == self.encounter.current_turn_index),
-                is_active=e.is_active,
-            ))
+            entities.append(
+                EntityRowDTO(
+                    instance_id=e.instance_id,
+                    display_name=e.display_name,
+                    entity_type=e.entity_type,
+                    initiative=e.initiative,
+                    current_hp=e.current_hp,
+                    max_hp=e.max_hp,
+                    conditions=[c.value for c in e.conditions],
+                    is_current_turn=(i == self.encounter.current_turn_index),
+                    is_active=e.is_active,
+                )
+            )
         return EncounterStateDTO(
             encounter_id=self.encounter.encounter_id,
             round_number=self.encounter.round_number,
@@ -77,6 +80,7 @@ class EncounterService:
 
     def toggle_condition(self, instance_id: str, condition_name: str) -> EncounterStateDTO:
         from src.dnd_encounter.domain.value_objects.condition import Condition
+
         condition = Condition(condition_name)
         cmd = ToggleConditionCommand(
             encounter=self.encounter,

@@ -2,6 +2,7 @@
 from typing import Protocol
 from ...application.dto.encounter_dto import EncounterStateDTO, MonsterSummaryDTO
 
+
 class IEncounterService(Protocol):
     def add_monster(self, monster_id: str) -> EncounterStateDTO: ...
     def add_player(self, name: str, initiative: int) -> EncounterStateDTO: ...

@@ -30,11 +30,11 @@ def sort_entities(
                 cr_decimal = defn.challenge_rating.decimal
         is_player = 0 if entity.entity_type == "player" else 1  # players first on tie
         return (
-            -entity.initiative,     # descending
-            -dex_mod,               # step 1: higher dex wins
-            is_player,              # step 2: players before monsters
-            -cr_decimal,            # step 3: higher CR wins
-            _rng.random(),          # steps 4+5: PRNG for remaining ties
+            -entity.initiative,  # descending
+            -dex_mod,  # step 1: higher dex wins
+            is_player,  # step 2: players before monsters
+            -cr_decimal,  # step 3: higher CR wins
+            _rng.random(),  # steps 4+5: PRNG for remaining ties
         )
 
     return sorted(entities, key=sort_key)

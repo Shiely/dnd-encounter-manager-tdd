@@ -1,7 +1,9 @@
 # ports/outbound/i_undo_stack.py
 from typing import Protocol, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ...application.commands.base_command import BaseCommand
+
 
 class IUndoStack(Protocol):
     def push(self, command: "BaseCommand") -> None: ...

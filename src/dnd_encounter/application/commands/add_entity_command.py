@@ -11,6 +11,7 @@ from src.dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
 
 import uuid
 
+
 @dataclass
 class AddEntityCommand(BaseCommand):
     encounter: Encounter

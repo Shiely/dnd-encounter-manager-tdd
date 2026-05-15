@@ -15,10 +15,18 @@ def test_add_monster(stub_monster_repo, stub_encounter_repo, stub_undo_stack, st
     from src.dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
 
     goblin = MonsterDefinition(
-        id="goblin", name="Goblin", size="Small", type_="humanoid", alignment="neutral evil",
-        armor_class=15, hit_points=7, hit_dice="2d6", speed={"walk": 30},
+        id="goblin",
+        name="Goblin",
+        size="Small",
+        type_="humanoid",
+        alignment="neutral evil",
+        armor_class=15,
+        hit_points=7,
+        hit_dice="2d6",
+        speed={"walk": 30},
         ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),
-        challenge_rating=ChallengeRating("1/4"), xp=50
+        challenge_rating=ChallengeRating("1/4"),
+        xp=50,
     )
     stub_monster_repo.upsert(goblin)
 

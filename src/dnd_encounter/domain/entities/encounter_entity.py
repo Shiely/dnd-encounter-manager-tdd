@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from ..value_objects.condition import Condition
 
+
 @dataclass
 class EncounterEntity:
     instance_id: str

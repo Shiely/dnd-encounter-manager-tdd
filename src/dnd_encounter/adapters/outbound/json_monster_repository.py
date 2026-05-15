@@ -12,6 +12,7 @@ APP_AUTHOR = "dnd-encounter-manager"
 
 MONSTERS_DB_PATH = Path(user_data_dir(APP_NAME, APP_AUTHOR)) / "monsters_db.json"
 
+
 class JsonMonsterRepository(IMonsterRepository):
     def __init__(self, path: Path | None = None):
         self.path = path or MONSTERS_DB_PATH

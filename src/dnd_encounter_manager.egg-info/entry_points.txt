@@ -1,0 +1,2 @@
+[console_scripts]
+dnd-encounter-manager = dnd_encounter.main:main

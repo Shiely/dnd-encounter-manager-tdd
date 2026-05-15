@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 _PATTERN = re.compile(r"^\d+d\d+([+-]\d+)?$|^\d+$")
 
+
 @dataclass(frozen=True)
 class DiceExpression:
     value: str

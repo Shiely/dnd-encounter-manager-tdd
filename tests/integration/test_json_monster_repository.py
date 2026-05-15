@@ -12,10 +12,18 @@ def test_upsert_and_get(tmp_path):
     repo = JsonMonsterRepository(path=tmp_path / "monsters.json")
 
     goblin = MonsterDefinition(
-        id="goblin", name="Goblin", size="Small", type_="humanoid", alignment="neutral evil",
-        armor_class=15, hit_points=7, hit_dice="2d6", speed={"walk": 30},
+        id="goblin",
+        name="Goblin",
+        size="Small",
+        type_="humanoid",
+        alignment="neutral evil",
+        armor_class=15,
+        hit_points=7,
+        hit_dice="2d6",
+        speed={"walk": 30},
         ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),
-        challenge_rating=ChallengeRating("1/4"), xp=50
+        challenge_rating=ChallengeRating("1/4"),
+        xp=50,
     )
 
     repo.upsert(goblin)
