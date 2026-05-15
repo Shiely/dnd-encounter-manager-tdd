@@ -67,6 +67,7 @@ class EncounterService:
             monster_repo=self.monster_repo,
             monster_id=monster_id,
             dice_roller=self.dice_roller,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
