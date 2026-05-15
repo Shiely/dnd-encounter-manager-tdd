@@ -110,6 +110,7 @@ def bootstrap() -> None:
     class SimpleDiceRoller:
         def roll_d20(self) -> int:
             import random
+
             return random.randint(1, 20)
 
     dice_roller = SimpleDiceRoller()
@@ -121,6 +122,7 @@ def bootstrap() -> None:
     publisher = SimplePublisher()
 
     from dnd_encounter.domain.entities.encounter import Encounter
+
     encounter = Encounter(encounter_id="default")
 
     service = EncounterService(
