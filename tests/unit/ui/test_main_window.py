@@ -3,7 +3,6 @@
 
 try:
     import PySide6.QtWidgets  # noqa: F401
-
     HAS_QT = True
 except ImportError:
     HAS_QT = False
@@ -17,9 +16,9 @@ if HAS_QT:
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-def test_main_window_loads(qtbot, stub_service):
+def test_main_window_loads(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Basic smoke test: window should open without crashing."""
-    window = MainWindow(stub_service)
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
     qtbot.addWidget(window)
     window.show()
 
@@ -28,9 +27,9 @@ def test_main_window_loads(qtbot, stub_service):
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-def test_sidebar_shows_entities(qtbot, stub_service):
+def test_sidebar_shows_entities(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Sidebar should display entities from the service."""
-    window = MainWindow(stub_service)
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
     qtbot.addWidget(window)
     window.show()
 
@@ -38,9 +37,9 @@ def test_sidebar_shows_entities(qtbot, stub_service):
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-def test_advance_turn_updates_round(qtbot, stub_service):
+def test_advance_turn_updates_round(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Advance Turn should update the round counter."""
-    window = MainWindow(stub_service)
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
     qtbot.addWidget(window)
     window.show()
 
@@ -50,9 +49,9 @@ def test_advance_turn_updates_round(qtbot, stub_service):
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-def test_context_menu_exists(qtbot, stub_service):
+def test_context_menu_exists(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Right-click context menu should exist."""
-    window = MainWindow(stub_service)
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
     qtbot.addWidget(window)
     window.show()
 
