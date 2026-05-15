@@ -3,9 +3,9 @@
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QLineEdit, QSpinBox, QGroupBox, QFormLayout
+    QPushButton, QSpinBox, QGroupBox, QFormLayout, QInputDialog
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt
 
 from dnd_encounter.application.services.encounter_service import EncounterService
 
@@ -17,20 +17,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("D&D Encounter Manager")
         self.setGeometry(100, 100, 1000, 700)
 
-        # Central widget
         central = QWidget()
         self.setCentralWidget(central)
         layout = QHBoxLayout(central)
 
-        # Sidebar (entity list)
         sidebar = self._create_sidebar()
         layout.addWidget(sidebar, 1)
 
-        # Stat block panel
         stat_panel = self._create_stat_panel()
         layout.addWidget(stat_panel, 2)
 
-        # Initial load
         self.refresh()
 
     def _create_sidebar(self) -> QWidget:
@@ -41,7 +37,6 @@ class MainWindow(QMainWindow):
         self.entity_list.currentRowChanged.connect(self._on_entity_selected)
         layout.addWidget(self.entity_list)
 
-        # Quick actions
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Add Monster")
         self.btn_add.clicked.connect(self._on_add_monster)
@@ -64,7 +59,6 @@ class MainWindow(QMainWindow):
         layout.addRow("Initiative:", self.lbl_initiative)
         layout.addRow("Conditions:", self.lbl_conditions)
 
-        # Quick edit
         self.spin_hp = QSpinBox()
         self.spin_hp.setRange(0, 999)
         self.btn_edit_hp = QPushButton("Set HP")
@@ -95,8 +89,6 @@ class MainWindow(QMainWindow):
             self.spin_hp.setValue(e.current_hp or 0)
 
     def _on_add_monster(self):
-        # Simple dialog for now
-        from PySide6.QtWidgets import QInputDialog
         monster_id, ok = QInputDialog.getText(self, "Add Monster", "Monster ID:")
         if ok and monster_id:
             self.service.add_monster(monster_id)
