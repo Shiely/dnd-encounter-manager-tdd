@@ -3,7 +3,7 @@
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QSpinBox, QGroupBox, QFormLayout
+    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
 )
 from PySide6.QtCore import Qt
 
@@ -36,6 +36,8 @@ class MainWindow(QMainWindow):
 
         self.entity_list = QListWidget()
         self.entity_list.currentRowChanged.connect(self._on_entity_selected)
+        self.entity_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.entity_list.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.entity_list)
 
         btn_layout = QHBoxLayout()
@@ -47,7 +49,6 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(self.btn_advance)
         layout.addLayout(btn_layout)
 
-        # Round counter
         self.lbl_round = QLabel("Round: 1")
         layout.addWidget(self.lbl_round)
 
@@ -120,3 +121,52 @@ class MainWindow(QMainWindow):
     def _on_advance_turn(self):
         self.service.advance_turn()
         self.refresh()
+
+    def _show_context_menu(self, position):
+        item = self.entity_list.itemAt(position)
+        if not item:
+            return
+
+        menu = QMenu(self)
+        row = self.entity_list.row(item)
+        state = self.service.get_state()
+        entity = state.entities[row]
+
+        remove_action = menu.addAction("Remove Entity")
+        remove_action.triggered.connect(lambda: self._remove_entity(entity.instance_id))
+
+        rename_action = menu.addAction("Rename Entity")
+        rename_action.triggered.connect(lambda: self._rename_entity(entity.instance_id))
+
+        edit_init_action = menu.addAction("Edit Initiative")
+        edit_init_action.triggered.connect(lambda: self._edit_initiative(entity.instance_id))
+
+        menu.exec(self.entity_list.mapToGlobal(position))
+
+    def _remove_entity(self, instance_id: str):
+        self.service.remove_entity(instance_id)
+        self.refresh()
+
+    def _rename_entity(self, instance_id: str):
+        new_name, ok = QInputDialog.getText(self, "Rename Entity", "New name:")
+        if ok and new_name:
+            self.service.rename_entity(instance_id, new_name)
+            self.refresh()
+
+    def _edit_initiative(self, instance_id: str):
+        new_init, ok = QInputDialog.getInt(self, "Edit Initiative", "New initiative:", 0, 0, 99)
+        if ok:
+            self.service.change_initiative(instance_id, new_init)
+            self.refresh()
+
+    def keyPressEvent(self, event):  # noqa: N802
+        if event.key() == Qt.Key_Space:
+            self._on_advance_turn()
+        elif event.key() == Qt.Key_Delete:
+            if self.entity_list.currentItem():
+                row = self.entity_list.currentRow()
+                state = self.service.get_state()
+                if row < len(state.entities):
+                    self._remove_entity(state.entities[row].instance_id)
+        else:
+            super().keyPressEvent(event)

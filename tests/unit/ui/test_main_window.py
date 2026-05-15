@@ -3,12 +3,12 @@
 
 try:
     import PySide6.QtWidgets  # noqa: F401
-
     HAS_QT = True
 except ImportError:
     HAS_QT = False
 
 
+from PySide6.QtCore import Qt
 import pytest
 
 if HAS_QT:
@@ -46,3 +46,13 @@ def test_advance_turn_updates_round(qtbot, stub_service):
     initial_round = window.lbl_round.text()
     window._on_advance_turn()
     assert window.lbl_round.text() != initial_round
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_context_menu_exists(qtbot, stub_service):
+    """Right-click context menu should exist."""
+    window = MainWindow(stub_service)
+    qtbot.addWidget(window)
+    window.show()
+
+    assert window.entity_list.contextMenuPolicy() == Qt.CustomContextMenu
