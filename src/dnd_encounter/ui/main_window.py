@@ -41,8 +41,15 @@ class MainWindow(QMainWindow):
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Add Monster")
         self.btn_add.clicked.connect(self._on_add_monster)
+        self.btn_advance = QPushButton("Advance Turn")
+        self.btn_advance.clicked.connect(self._on_advance_turn)
         btn_layout.addWidget(self.btn_add)
+        btn_layout.addWidget(self.btn_advance)
         layout.addLayout(btn_layout)
+
+        # Round counter
+        self.lbl_round = QLabel("Round: 1")
+        layout.addWidget(self.lbl_round)
 
         return group
 
@@ -77,6 +84,8 @@ class MainWindow(QMainWindow):
             text = f"{entity.display_name} (Init: {entity.initiative}, HP: {entity.current_hp})"
             self.entity_list.addItem(text)
 
+        self.lbl_round.setText(f"Round: {state.round_number}")
+
     def _on_entity_selected(self, row: int):
         if row < 0:
             return
@@ -107,3 +116,7 @@ class MainWindow(QMainWindow):
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
             self.refresh()
+
+    def _on_advance_turn(self):
+        self.service.advance_turn()
+        self.refresh()
