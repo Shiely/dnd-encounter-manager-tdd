@@ -72,6 +72,7 @@ class EncounterService:
         cmd.execute()
         self.undo_stack.push(cmd)
         self.encounter_repo.save(self.encounter)
+        return self.encounter
 
     def add_player(self, name: str, initiative: int, max_hp: int):
         """Add a player character to the encounter."""
