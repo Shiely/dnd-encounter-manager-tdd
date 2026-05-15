@@ -26,12 +26,16 @@ class JsonMonsterRepository(IMonsterRepository):
 
     def _write(self, data: list[dict]) -> None:
         with open(self.path, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, default=self._json_default)
+
+    def _json_default(self, o):
+        if hasattr(o, "__dict__"):
+            return o.__dict__
+        raise TypeError(f"Object of type {type(o)} is not JSON serializable")
 
     def get(self, monster_id: str) -> MonsterDefinition | None:
         for item in self._load():
             if item["id"] == monster_id:
-                # Simplified deserialization
                 return MonsterDefinition(**item)  # type: ignore
         return None
 
