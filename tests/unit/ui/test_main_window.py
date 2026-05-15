@@ -2,7 +2,7 @@
 # GUI tests using pytest-qt
 
 try:
-    from PySide6.QtWidgets import QApplication
+    import PySide6.QtWidgets  # noqa: F401
     HAS_QT = True
 except ImportError:
     HAS_QT = False
