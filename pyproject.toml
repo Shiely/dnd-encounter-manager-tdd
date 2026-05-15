@@ -51,6 +51,7 @@ select = ["E", "F", "I", "UP", "N"]
 
 [tool.importlinter]
 root_packages = ["dnd_encounter"]
+src_roots = ["src"]
 
 [[tool.importlinter.contracts]]
 name = "Domain has no external imports"
