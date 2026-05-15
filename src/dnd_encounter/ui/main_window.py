@@ -2,8 +2,18 @@
 # Thin UI layer - only calls EncounterService and reacts to events
 
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QGroupBox,
+    QFormLayout,
+    QMenu,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt
 
