@@ -12,6 +12,15 @@ dependencies = [
     "platformdirs>=4.2",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "import-linter>=2.1",
+]
+
 [project.scripts]
 dnd-encounter-manager = "dnd_encounter.main:main"
 
