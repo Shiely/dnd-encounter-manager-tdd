@@ -1,8 +1,8 @@
 # DOMAIN LAYER: stdlib imports only.
 from __future__ import annotations
 from dataclasses import dataclass, field
-from .ability_scores import AbilityScores
-from .challenge_rating import ChallengeRating
+from ..value_objects.ability_scores import AbilityScores
+from ..value_objects.challenge_rating import ChallengeRating
 
 
 @dataclass
