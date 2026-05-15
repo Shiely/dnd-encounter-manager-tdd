@@ -4,18 +4,8 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QListWidget,
-    QLabel,
-    QPushButton,
-    QSpinBox,
-    QGroupBox,
-    QFormLayout,
-    QMenu,
-    QInputDialog,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
+    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
 )
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
@@ -186,9 +176,9 @@ class MainWindow(QMainWindow):
             self.refresh()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        if event.key() == Qt.Key.Space:
+        if event.key() == Qt.Key.Key_Space:
             self._on_advance_turn()
-        elif event.key() == Qt.Key.Delete:
+        elif event.key() == Qt.Key.Key_Delete:
             if self.entity_list.currentItem():
                 row = self.entity_list.currentRow()
                 state = self.service.get_state()
