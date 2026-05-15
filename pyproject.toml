@@ -22,6 +22,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/dnd_encounter"]
 
+[tool.hatch.build]
+sources = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/dnd_encounter --cov-report=term-missing -q"
