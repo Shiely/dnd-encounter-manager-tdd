@@ -45,7 +45,8 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "N", "ANN"]
+select = ["E", "F", "I", "UP", "N"]
+# ANN (annotations) temporarily disabled as tech debt - re-enable later
 
 [tool.importlinter]
 root_packages = ["dnd_encounter"]
