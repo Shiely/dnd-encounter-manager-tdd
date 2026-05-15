@@ -8,6 +8,7 @@ except ImportError:
     HAS_QT = False
 
 
+from PySide6.QtCore import Qt
 import pytest
 
 if HAS_QT:
