@@ -18,7 +18,7 @@ def test_execute_removes_entity(stub_publisher):
 
 def test_undo_restores_entity(stub_publisher):
     encounter = Encounter(encounter_id="test")
-    entity = EncounterEntity("e1", "Goblin #1", "monster", 10, current_hp=10, max_hp=10, is_active=False, monster_id="goblin")
+    entity = EncounterEntity("e1", "Goblin #1", "monster", 10, current_hp=10, max_hp=10, is_active=True, monster_id="goblin")
     encounter.entities.append(entity)
 
     cmd = RemoveEntityCommand(encounter, "e1", stub_publisher)
