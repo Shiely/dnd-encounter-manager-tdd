@@ -3,11 +3,12 @@
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QSpinBox, QGroupBox, QFormLayout, QInputDialog
+    QPushButton, QSpinBox, QGroupBox, QFormLayout
 )
 from PySide6.QtCore import Qt
 
 from dnd_encounter.application.services.encounter_service import EncounterService
+from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
 
 
 class MainWindow(QMainWindow):
@@ -89,10 +90,12 @@ class MainWindow(QMainWindow):
             self.spin_hp.setValue(e.current_hp or 0)
 
     def _on_add_monster(self):
-        monster_id, ok = QInputDialog.getText(self, "Add Monster", "Monster ID:")
-        if ok and monster_id:
-            self.service.add_monster(monster_id)
-            self.refresh()
+        dialog = AddMonsterDialog(self.service, self)
+        if dialog.exec():
+            monster_id = dialog.get_selected_monster_id()
+            if monster_id:
+                self.service.add_monster(monster_id)
+                self.refresh()
 
     def _on_edit_hp(self):
         if not self.entity_list.currentItem():
