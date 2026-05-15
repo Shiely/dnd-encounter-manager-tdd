@@ -55,4 +55,7 @@ def test_context_menu_exists(qtbot, stub_service):  # type: ignore[no-untyped-de
     qtbot.addWidget(window)
     window.show()
 
-    assert window.entity_list.contextMenuPolicy() == Qt.ContextMenuPolicy.CustomContextMenu
+    assert (
+        window.entity_list.contextMenuPolicy()
+        == Qt.ContextMenuPolicy.CustomContextMenu
+    )
