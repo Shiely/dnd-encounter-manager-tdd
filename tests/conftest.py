@@ -90,3 +90,16 @@ def stub_dice_roller() -> StubDiceRoller:
 @pytest.fixture
 def stub_publisher() -> StubEventPublisher:
     return StubEventPublisher()
+
+
+@pytest.fixture
+def stub_service():
+    """Stub service for UI testing."""
+    service = Mock()
+    service.get_state = Mock(return_value=Mock(entities=[], round_number=1))
+    service.add_monster = Mock()
+    service.add_player = Mock()
+    service.edit_hp = Mock()
+    service.remove_entity = Mock()
+    service.advance_turn = Mock()
+    return service
