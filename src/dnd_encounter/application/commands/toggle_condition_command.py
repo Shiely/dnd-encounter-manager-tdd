@@ -13,7 +13,7 @@ class ToggleConditionCommand(BaseCommand):
     instance_id: str
     condition: Condition
     publisher: IEventPublisher
-    _old_conditions: list[Condition] = None
+    _old_conditions: list[Condition] | None = None
 
     def execute(self) -> None:
         entity = next(e for e in self.encounter.entities if e.instance_id == self.instance_id)
@@ -29,6 +29,7 @@ class ToggleConditionCommand(BaseCommand):
         )
 
     def undo(self) -> None:
-        entity = next(e for e in self.encounter.entities if e.instance_id == self.instance_id)
-        entity.conditions = self._old_conditions
-        self.publisher.publish("condition_restored", {"instance_id": self.instance_id})
+        if self._old_conditions is not None:
+            entity = next(e for e in self.encounter.entities if e.instance_id == self.instance_id)
+            entity.conditions = self._old_conditions
+            self.publisher.publish("condition_restored", {"instance_id": self.instance_id})

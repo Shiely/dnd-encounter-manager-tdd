@@ -39,6 +39,7 @@ addopts = "--cov=src/dnd_encounter --cov-report=term-missing -q"
 python_version = "3.12"
 strict = false
 ignore_missing_imports = true
+explicit_package_bases = true
 files = ["src/dnd_encounter", "tests"]
 
 [tool.ruff]
@@ -50,6 +51,7 @@ select = ["E", "F", "I", "UP", "N"]
 
 [tool.importlinter]
 root_packages = ["dnd_encounter"]
+src_roots = ["src"]
 
 [[tool.importlinter.contracts]]
 name = "Domain has no external imports"
