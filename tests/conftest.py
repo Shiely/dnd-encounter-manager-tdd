@@ -89,3 +89,4 @@ def stub_dice_roller() -> StubDiceRoller:
 
 @pytest.fixture
 def stub_publisher() -> StubEventPublisher:
+    return StubEventPublisher()
