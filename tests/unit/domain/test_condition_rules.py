@@ -22,8 +22,7 @@ def test_toggle_removes_when_present():
 def test_toggle_is_idempotent():
     conditions = []
     result = toggle_condition(conditions, Condition.FRIGHTENED)
-    result = toggle_condition(result, Condition.FRIGHTENED)  # add twice
-    result = toggle_condition(result, Condition.FRIGHTENED)  # remove
+    result = toggle_condition(result, Condition.FRIGHTENED)  # toggle twice (add then remove)
     assert len(result) == 0
 
 
