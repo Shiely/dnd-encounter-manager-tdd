@@ -132,15 +132,12 @@ class MainWindow(QMainWindow):
         state = self.service.get_state()
         entity = state.entities[row]
 
-        # Remove
         remove_action = menu.addAction("Remove Entity")
         remove_action.triggered.connect(lambda: self._remove_entity(entity.instance_id))
 
-        # Rename
         rename_action = menu.addAction("Rename Entity")
         rename_action.triggered.connect(lambda: self._rename_entity(entity.instance_id))
 
-        # Edit Initiative
         edit_init_action = menu.addAction("Edit Initiative")
         edit_init_action.triggered.connect(lambda: self._edit_initiative(entity.instance_id))
 
@@ -162,7 +159,7 @@ class MainWindow(QMainWindow):
             self.service.change_initiative(instance_id, new_init)
             self.refresh()
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event):  # noqa: N802
         if event.key() == Qt.Key_Space:
             self._on_advance_turn()
         elif event.key() == Qt.Key_Delete:
