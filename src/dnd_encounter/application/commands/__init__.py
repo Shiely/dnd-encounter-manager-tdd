@@ -1,0 +1,7 @@
+# application/commands/__init__.py
+from .add_entity_command import AddEntityCommand
+from .edit_hp_command import EditHpCommand
+from .remove_entity_command import RemoveEntityCommand
+from .toggle_condition_command import ToggleConditionCommand
+from .rename_entity_command import RenameEntityCommand
+from .change_initiative_command import ChangeInitiativeCommand
