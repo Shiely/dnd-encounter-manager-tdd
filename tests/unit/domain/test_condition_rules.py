@@ -1,8 +1,8 @@
 # tests/unit/domain/test_condition_rules.py
 # DOMAIN LAYER TEST - No external imports allowed
 
-from src.dnd_encounter.domain.rules.condition_rules import toggle_condition
-from src.dnd_encounter.domain.value_objects.condition import Condition
+from dnd_encounter.domain.rules.condition_rules import toggle_condition
+from dnd_encounter.domain.value_objects.condition import Condition
 
 
 def test_toggle_adds_when_not_present():

@@ -1,15 +1,15 @@
 # application/services/encounter_service.py
 from __future__ import annotations
 from dataclasses import dataclass
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
-from src.dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
-from src.dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
-from src.dnd_encounter.ports.outbound.i_undo_stack import IUndoStack
-from src.dnd_encounter.ports.outbound.i_dice_roller import IDiceRoller
-from src.dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
-from src.dnd_encounter.application.dto.encounter_dto import EncounterStateDTO, EntityRowDTO, MonsterSummaryDTO
-from src.dnd_encounter.application.commands import (
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
+from dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
+from dnd_encounter.ports.outbound.i_undo_stack import IUndoStack
+from dnd_encounter.ports.outbound.i_dice_roller import IDiceRoller
+from dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
+from dnd_encounter.application.dto.encounter_dto import EncounterStateDTO, EntityRowDTO, MonsterSummaryDTO
+from dnd_encounter.application.commands import (
     AddEntityCommand,
     EditHpCommand,
     ToggleConditionCommand,
@@ -79,7 +79,7 @@ class EncounterService:
         return self._to_dto()
 
     def toggle_condition(self, instance_id: str, condition_name: str) -> EncounterStateDTO:
-        from src.dnd_encounter.domain.value_objects.condition import Condition
+        from dnd_encounter.domain.value_objects.condition import Condition
 
         condition = Condition(condition_name)
         cmd = ToggleConditionCommand(

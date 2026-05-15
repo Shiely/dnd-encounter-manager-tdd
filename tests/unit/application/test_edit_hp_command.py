@@ -2,9 +2,9 @@
 # Uses stubs from conftest
 
 import pytest
-from src.dnd_encounter.application.commands.edit_hp_command import EditHpCommand
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.application.commands.edit_hp_command import EditHpCommand
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
 
 
 def test_execute_sets_hp(stub_encounter_repo, stub_publisher):

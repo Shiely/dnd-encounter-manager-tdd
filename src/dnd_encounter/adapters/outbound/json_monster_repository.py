@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from platformdirs import user_data_dir
-from src.dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
 
-from src.dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
+from dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
 
 APP_NAME = "DndEncounterManager"
 APP_AUTHOR = "dnd-encounter-manager"

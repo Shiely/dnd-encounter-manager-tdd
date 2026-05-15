@@ -2,9 +2,9 @@
 # DOMAIN LAYER TEST
 
 import pytest
-from src.dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
-from src.dnd_encounter.domain.value_objects.dice_expression import DiceExpression
-from src.dnd_encounter.domain.value_objects.ability_scores import AbilityScores
+from dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
+from dnd_encounter.domain.value_objects.dice_expression import DiceExpression
+from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
 
 
 def test_challenge_rating_decimal():

@@ -1,7 +1,7 @@
 # tests/unit/domain/test_hp_rules.py
 # DOMAIN LAYER TEST - No external imports allowed
 
-from src.dnd_encounter.domain.rules.hp_rules import apply_hp_edit, is_auto_remove
+from dnd_encounter.domain.rules.hp_rules import apply_hp_edit, is_auto_remove
 
 
 def test_apply_hp_edit_normal():

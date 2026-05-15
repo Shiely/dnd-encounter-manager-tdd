@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 from platformdirs import user_data_dir
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
 
 APP_NAME = "DndEncounterManager"
 APP_AUTHOR = "dnd-encounter-manager"

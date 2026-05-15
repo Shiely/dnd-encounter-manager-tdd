@@ -1,9 +1,9 @@
 # application/services/undo_service.py
 from __future__ import annotations
 from dataclasses import dataclass
-from src.dnd_encounter.ports.outbound.i_undo_stack import IUndoStack
-from src.dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
-from src.dnd_encounter.application.dto.encounter_dto import EncounterStateDTO
+from dnd_encounter.ports.outbound.i_undo_stack import IUndoStack
+from dnd_encounter.ports.outbound.i_encounter_repository import IEncounterRepository
+from dnd_encounter.application.dto.encounter_dto import EncounterStateDTO
 
 
 @dataclass

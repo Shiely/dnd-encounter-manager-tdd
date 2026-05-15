@@ -2,10 +2,10 @@
 import tempfile
 from pathlib import Path
 
-from src.dnd_encounter.adapters.outbound.json_monster_repository import JsonMonsterRepository
-from src.dnd_encounter.domain.entities.monster_definition import MonsterDefinition
-from src.dnd_encounter.domain.value_objects.ability_scores import AbilityScores
-from src.dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
+from dnd_encounter.adapters.outbound.json_monster_repository import JsonMonsterRepository
+from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
+from dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
 
 
 def test_upsert_and_get(tmp_path):

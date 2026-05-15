@@ -1,9 +1,9 @@
 # tests/conftest.py
 import collections
 import pytest
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.monster_definition import MonsterDefinition
-from src.dnd_encounter.application.commands.base_command import BaseCommand
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+from dnd_encounter.application.commands.base_command import BaseCommand
 
 
 class StubMonsterRepository:

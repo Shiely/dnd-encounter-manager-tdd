@@ -1,8 +1,8 @@
 # tests/unit/application/test_change_initiative_command.py
 
-from src.dnd_encounter.application.commands.change_initiative_command import ChangeInitiativeCommand
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.application.commands.change_initiative_command import ChangeInitiativeCommand
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
 
 
 def test_execute_changes_initiative(stub_publisher):

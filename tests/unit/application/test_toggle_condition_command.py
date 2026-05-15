@@ -1,9 +1,9 @@
 # tests/unit/application/test_toggle_condition_command.py
 
-from src.dnd_encounter.application.commands.toggle_condition_command import ToggleConditionCommand
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
-from src.dnd_encounter.domain.value_objects.condition import Condition
+from dnd_encounter.application.commands.toggle_condition_command import ToggleConditionCommand
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.domain.value_objects.condition import Condition
 
 
 def test_execute_toggles_condition_on(stub_publisher):

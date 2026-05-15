@@ -1,7 +1,7 @@
 # application/services/import_service.py
 from __future__ import annotations
 from dataclasses import dataclass
-from src.dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
+from dnd_encounter.ports.outbound.i_monster_repository import IMonsterRepository
 
 
 @dataclass

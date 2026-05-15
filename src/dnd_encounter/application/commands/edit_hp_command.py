@@ -2,9 +2,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from .base_command import BaseCommand
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.rules.hp_rules import apply_hp_edit, is_auto_remove
-from src.dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.rules.hp_rules import apply_hp_edit, is_auto_remove
+from dnd_encounter.ports.outbound.i_event_publisher import IEventPublisher
 
 
 @dataclass

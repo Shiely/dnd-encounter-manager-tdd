@@ -2,17 +2,17 @@
 # Uses stubs from conftest
 
 import pytest
-from src.dnd_encounter.application.services.encounter_service import EncounterService
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.application.services.encounter_service import EncounterService
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
 
 
 def test_add_monster(stub_monster_repo, stub_encounter_repo, stub_undo_stack, stub_dice_roller, stub_publisher):
     encounter = Encounter(encounter_id="test")
     # Add a monster to the stub repo
-    from src.dnd_encounter.domain.entities.monster_definition import MonsterDefinition
-    from src.dnd_encounter.domain.value_objects.ability_scores import AbilityScores
-    from src.dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
+    from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+    from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
+    from dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
 
     goblin = MonsterDefinition(
         id="goblin",

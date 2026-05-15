@@ -2,8 +2,8 @@
 import tempfile
 from pathlib import Path
 
-from src.dnd_encounter.adapters.outbound.json_encounter_repository import JsonEncounterRepository
-from src.dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.adapters.outbound.json_encounter_repository import JsonEncounterRepository
+from dnd_encounter.domain.entities.encounter import Encounter
 
 
 def test_save_and_load(tmp_path):

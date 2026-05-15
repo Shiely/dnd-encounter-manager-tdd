@@ -1,8 +1,8 @@
 # tests/unit/application/test_rename_entity_command.py
 
-from src.dnd_encounter.application.commands.rename_entity_command import RenameEntityCommand
-from src.dnd_encounter.domain.entities.encounter import Encounter
-from src.dnd_encounter.domain.entities.encounter_entity import EncounterEntity
+from dnd_encounter.application.commands.rename_entity_command import RenameEntityCommand
+from dnd_encounter.domain.entities.encounter import Encounter
+from dnd_encounter.domain.entities.encounter_entity import EncounterEntity
 
 
 def test_execute_renames_entity(stub_publisher):
