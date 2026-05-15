@@ -80,7 +80,7 @@ def test_tie_step3_higher_cr_wins():
         hit_points=7,
         hit_dice="2d6",
         speed={"walk": 30},
-        ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),
+        ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),  # dex 14
         challenge_rating=ChallengeRating("1/4"),
         xp=50,
     )
@@ -94,7 +94,7 @@ def test_tie_step3_higher_cr_wins():
         hit_points=59,
         hit_dice="7d10+21",
         speed={"walk": 40},
-        ability_scores=AbilityScores(19, 8, 16, 5, 7, 7),
+        ability_scores=AbilityScores(19, 14, 16, 5, 7, 7),  # dex 14 (same)
         challenge_rating=ChallengeRating("2"),
         xp=450,
     )
@@ -104,7 +104,7 @@ def test_tie_step3_higher_cr_wins():
     ]
     defs = {"goblin": low_cr, "ogre": high_cr}
     result = sort_entities(entities, defs)
-    assert result[0].display_name == "Ogre #1"
+    assert result[0].display_name == "Ogre #1"  # higher CR
 
 
 def test_tie_prng():
