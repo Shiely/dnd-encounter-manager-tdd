@@ -1,5 +1,5 @@
 # tests/unit/application/test_encounter_service.py
-# Uses real implementations with temp files
+# Clean tests using real implementations
 
 import pytest
 import tempfile
@@ -8,9 +8,13 @@ from pathlib import Path
 from dnd_encounter.application.services.encounter_service import EncounterService
 from dnd_encounter.domain.entities.encounter import Encounter
 from dnd_encounter.adapters.outbound.json_encounter_repository import JsonEncounterRepository
+from dnd_encounter.adapters.outbound.json_monster_repository import JsonMonsterRepository
+from dnd_encounter.adapters.outbound.in_memory_undo_stack import InMemoryUndoStack
+from dnd_encounter.adapters.outbound.dice_roller import DiceRoller
+from dnd_encounter.adapters.outbound.event_publisher import EventPublisher
 
 
-def test_add_monster(stub_monster_repo, stub_undo_stack, stub_dice_roller, stub_publisher):
+def test_add_monster():
     encounter = Encounter(encounter_id="test")
     from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
     from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
@@ -30,18 +34,22 @@ def test_add_monster(stub_monster_repo, stub_undo_stack, stub_dice_roller, stub_
         challenge_rating=ChallengeRating("1/4"),
         xp=50,
     )
-    stub_monster_repo.upsert(goblin)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "test_encounter.json")
+        monster_repo = JsonMonsterRepository(path=Path(tmpdir) / "monsters.json")
+        monster_repo.upsert(goblin)
+        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "encounter.json")
+        undo_stack = InMemoryUndoStack()
+        dice_roller = DiceRoller()
+        publisher = EventPublisher()
 
         service = EncounterService(
             encounter=encounter,
-            monster_repo=stub_monster_repo,
+            monster_repo=monster_repo,
             encounter_repo=encounter_repo,
-            undo_stack=stub_undo_stack,
-            dice_roller=stub_dice_roller,
-            publisher=stub_publisher,
+            undo_stack=undo_stack,
+            dice_roller=dice_roller,
+            publisher=publisher,
         )
 
         result = service.add_monster("goblin")
@@ -49,35 +57,21 @@ def test_add_monster(stub_monster_repo, stub_undo_stack, stub_dice_roller, stub_
         assert result.entities[0].display_name.startswith("Goblin #")
 
 
-def test_undo(stub_monster_repo, stub_undo_stack, stub_dice_roller, stub_publisher):
+def test_add_player():
     encounter = Encounter(encounter_id="test")
     with tempfile.TemporaryDirectory() as tmpdir:
-        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "test_encounter.json")
-
-        service = EncounterService(
-            encounter=encounter,
-            monster_repo=stub_monster_repo,
-            encounter_repo=encounter_repo,
-            undo_stack=stub_undo_stack,
-            dice_roller=stub_dice_roller,
-            publisher=stub_publisher,
-        )
-
-        assert True  # Placeholder
-
-
-def test_add_player(stub_publisher):
-    encounter = Encounter(encounter_id="test")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "test_encounter.json")
+        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "encounter.json")
+        undo_stack = InMemoryUndoStack()
+        dice_roller = DiceRoller()
+        publisher = EventPublisher()
 
         service = EncounterService(
             encounter=encounter,
             monster_repo=None,  # type: ignore[arg-type]
             encounter_repo=encounter_repo,
-            undo_stack=None,  # type: ignore[arg-type]
-            dice_roller=None,  # type: ignore[arg-type]
-            publisher=stub_publisher,
+            undo_stack=undo_stack,
+            dice_roller=dice_roller,
+            publisher=publisher,
         )
 
         service.add_player("Aragorn", 18, 45)
@@ -85,18 +79,21 @@ def test_add_player(stub_publisher):
         assert encounter.entities[0].display_name == "Aragorn"
 
 
-def test_add_player_multiple(stub_publisher):
+def test_add_player_multiple():
     encounter = Encounter(encounter_id="test")
     with tempfile.TemporaryDirectory() as tmpdir:
-        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "test_encounter.json")
+        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "encounter.json")
+        undo_stack = InMemoryUndoStack()
+        dice_roller = DiceRoller()
+        publisher = EventPublisher()
 
         service = EncounterService(
             encounter=encounter,
             monster_repo=None,  # type: ignore[arg-type]
             encounter_repo=encounter_repo,
-            undo_stack=None,  # type: ignore[arg-type]
-            dice_roller=None,  # type: ignore[arg-type]
-            publisher=stub_publisher,
+            undo_stack=undo_stack,
+            dice_roller=dice_roller,
+            publisher=publisher,
         )
 
         service.add_player("Aragorn", 18, 45)
