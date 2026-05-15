@@ -1,0 +1,67 @@
+[project]
+name = "dnd-encounter-manager"
+version = "0.1.0"
+description = "Hexagonal-architecture D&D 5e encounter manager"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.7",
+    "pydantic>=2.7",
+    "jsonschema>=4.22",
+    "platformdirs>=4.2",
+]
+
+[project.scripts]
+dnd-encounter-manager = "dnd_encounter.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dnd_encounter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src/dnd_encounter --cov-report=term-missing -q"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src/dnd_encounter", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "N", "ANN"]
+
+[tool.importlinter]
+root_packages = ["dnd_encounter"]
+
+[[tool.importlinter.contracts]]
+name = "Domain has no external imports"
+type = "forbidden"
+source_modules = ["dnd_encounter.domain"]
+forbidden_modules = [
+    "dnd_encounter.ports",
+    "dnd_encounter.application",
+    "dnd_encounter.adapters",
+    "pydantic",
+    "PySide6",
+    "jsonschema",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application does not import adapters"
+type = "forbidden"
+source_modules = ["dnd_encounter.application"]
+forbidden_modules = ["dnd_encounter.adapters", "PySide6", "jsonschema"]
+
+[[tool.importlinter.contracts]]
+name = "Ports do not import application or adapters"
+type = "forbidden"
+source_modules = ["dnd_encounter.ports"]
+forbidden_modules = ["dnd_encounter.application", "dnd_encounter.adapters"]
