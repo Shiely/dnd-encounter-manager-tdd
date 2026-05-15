@@ -3,7 +3,6 @@
 
 try:
     import PySide6.QtWidgets  # noqa: F401
-
     HAS_QT = True
 except ImportError:
     HAS_QT = False
@@ -34,3 +33,15 @@ def test_sidebar_shows_entities(qtbot, stub_service):
     window.show()
 
     assert window.entity_list.count() >= 0
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_advance_turn_updates_round(qtbot, stub_service):
+    """Advance Turn should update the round counter."""
+    window = MainWindow(stub_service)
+    qtbot.addWidget(window)
+    window.show()
+
+    initial_round = window.lbl_round.text()
+    window._on_advance_turn()
+    assert window.lbl_round.text() != initial_round
