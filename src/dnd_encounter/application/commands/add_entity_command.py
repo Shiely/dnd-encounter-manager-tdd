@@ -43,7 +43,7 @@ class AddEntityCommand(BaseCommand):
         entity.initiative_roll = roll
         entity.initiative = roll + definition.ability_scores.dex_modifier
 
-        self.encounter.entities.append(entity)
+        self.encounter.entities.append(entity)  # type: ignore[arg-type]
         self._snapshot = entity
 
         self.publisher.publish("entity_added", {"instance_id": instance_id})
