@@ -3,7 +3,6 @@
 
 try:
     import PySide6.QtWidgets  # noqa: F401
-
     HAS_QT = True
 except ImportError:
     HAS_QT = False
@@ -56,4 +55,4 @@ def test_context_menu_exists(qtbot, stub_service):
     qtbot.addWidget(window)
     window.show()
 
-    assert window.entity_list.contextMenuPolicy() == Qt.CustomContextMenu
+    assert window.entity_list.contextMenuPolicy() == Qt.ContextMenuPolicy.CustomContextMenu
