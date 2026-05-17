@@ -63,6 +63,6 @@ def stub_service():
     service.get_state.return_value = state
     service.add_monster.return_value = state
     service.edit_hp.return_value = state
-    service.advance_turn = mock_advance_turn
+    service.advance_turn = Mock(side_effect=mock_advance_turn)
 
     return service
