@@ -33,7 +33,7 @@ def stub_service():
             current_hp=7,
             max_hp=7,
             conditions=["Poisoned"],
-            is_current_turn=True,   # current turn
+            is_current_turn=True,  # current turn
             is_active=True,
         ),
         EntityRowDTO(
@@ -45,7 +45,7 @@ def stub_service():
             max_hp=15,
             conditions=["Dead"],
             is_current_turn=False,
-            is_active=False,        # inactive / dead
+            is_active=False,  # inactive / dead
         ),
     ]
 
