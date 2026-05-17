@@ -39,6 +39,7 @@ class EncounterService:
     def get_state(self):
         from dnd_encounter.application.dto.encounter_dto import EncounterStateDTO, EntityRowDTO
 
+        current = self.encounter.current_entity()
         entities = []
         for entity in self.encounter.entities:
             entities.append(
@@ -50,7 +51,8 @@ class EncounterService:
                     current_hp=entity.current_hp,
                     max_hp=entity.max_hp,
                     conditions=[c.value for c in entity.conditions],
-                    monster_id=entity.monster_id,
+                    is_current_turn=(entity is current),
+                    is_active=entity.is_active,
                 )
             )
 
