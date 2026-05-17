@@ -121,8 +121,14 @@ class MainWindow(QMainWindow):
             hp_display = f"{e.current_hp} / {e.max_hp}" if e.current_hp is not None else "- / -"
             self.lbl_hp.setText(hp_display)
             self.lbl_initiative.setText(str(e.initiative))
-            # Properly join conditions
-            conditions_text = ", ".join([c.value for c in e.conditions]) if e.conditions else "None"
+            # Handle both Condition objects and plain strings (for test compatibility)
+            if e.conditions:
+                if hasattr(e.conditions[0], 'value'):
+                    conditions_text = ", ".join([c.value for c in e.conditions])
+                else:
+                    conditions_text = ", ".join(e.conditions)
+            else:
+                conditions_text = "None"
             self.lbl_conditions.setText(conditions_text)
             self.spin_hp.setValue(e.current_hp or 0)
 
