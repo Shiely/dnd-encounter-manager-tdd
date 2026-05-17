@@ -81,7 +81,7 @@ def stub_service():
     def _advance_turn_impl():
         if encounter.entities:
             encounter.current_turn_index = (encounter.current_turn_index + 1) % len(encounter.entities)
-            encounter.round_number += 1  # always increment for test
+            encounter.round_number += 1
         return encounter
 
     service.advance_turn = Mock(side_effect=_advance_turn_impl)
@@ -92,13 +92,3 @@ def stub_service():
     service.change_initiative = Mock()
 
     return service
-
-
-@pytest.fixture(autouse=True)
-def mock_qinputdialog():
-    """Automatically mock QInputDialog so GUI tests don't hang on modal dialogs."""
-    with (
-        patch("PySide6.QtWidgets.QInputDialog.getText", return_value=("New Name", True)),
-        patch("PySide6.QtWidgets.QInputDialog.getInt", return_value=(15, True)),
-    ):
-        yield
