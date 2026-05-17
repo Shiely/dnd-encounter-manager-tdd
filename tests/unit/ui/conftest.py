@@ -75,9 +75,18 @@ def stub_service():
         )
 
     service.get_state = mock_get_state
+
+    # Make advance_turn actually increment the round on the live encounter
+    def mock_advance_turn():
+        if encounter.entities:
+            encounter.current_turn_index = (encounter.current_turn_index + 1) % len(encounter.entities)
+            if encounter.current_turn_index == 0:
+                encounter.round_number += 1
+        return encounter
+
+    service.advance_turn = mock_advance_turn
     service.add_monster = Mock(return_value=encounter)
     service.edit_hp = Mock()
-    service.advance_turn = Mock()
     service.remove_entity = Mock()
     service.rename_entity = Mock()
     service.change_initiative = Mock()
