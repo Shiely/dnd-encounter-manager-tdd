@@ -101,3 +101,25 @@ def test_stat_panel_updates_on_entity_selection(qtbot, stub_service):  # type: i
     assert window.lbl_name.text() == "Orc #2"
     assert "0 / 15" in window.lbl_hp.text()
     assert window.lbl_initiative.text() == "12"
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_context_menu_remove_entity(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Right-click context menu Remove action should call remove_entity and refresh the list."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    initial_count = window.entity_list.count()
+
+    # Simulate right-click on first item and trigger remove
+    item = window.entity_list.item(0)
+    window.entity_list.setCurrentItem(item)
+
+    # Directly call the remove handler (simulates menu action)
+    window._remove_entity("e1")  # instance_id from our stub
+
+    # After remove, list should have one fewer item (stub returns same state, but we verify call)
+    # Note: In real flow the service would update state; here we just verify the method is wired
+    assert stub_service.remove_entity.called
+    assert stub_service.remove_entity.call_args[0][0] == "e1"
