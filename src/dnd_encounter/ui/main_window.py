@@ -18,14 +18,16 @@ from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
 
 from dnd_encounter.application.services.encounter_service import EncounterService
+from dnd_encounter.adapters.outbound.event_publisher import EventPublisher
 from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
 from dnd_encounter.ui.add_player_dialog import AddPlayerDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, service: EncounterService) -> None:
+    def __init__(self, service: EncounterService, publisher: EventPublisher | None = None) -> None:
         super().__init__()
         self.service = service
+        self.publisher = publisher
         self.setWindowTitle("D&D Encounter Manager")
         self.setGeometry(100, 100, 1000, 700)
 
@@ -39,7 +41,16 @@ class MainWindow(QMainWindow):
         stat_panel = self._create_stat_panel()
         layout.addWidget(stat_panel, 2)
 
+        # Subscribe to events for reactive updates
+        if self.publisher:
+            self.publisher.event_fired.connect(self._on_event)
+
         self.refresh()
+
+    def _on_event(self, event_type: str, payload: dict):
+        """React to domain events by refreshing the UI."""
+        if event_type in ("hp_changed", "entity_auto_removed", "entity_removed"):
+            self.refresh()
 
     def _create_sidebar(self) -> QWidget:
         group = QGroupBox("Initiative Order")
@@ -92,7 +103,7 @@ class MainWindow(QMainWindow):
         return group
 
     def refresh(self):
-        # Build directly from live in-memory encounter (bypasses fragile repository/DTO layer)
+        # Build directly from live in-memory encounter
         self.entity_list.clear()
         for entity in self.service.encounter.entities:
             hp_display = entity.current_hp if entity.current_hp is not None else "-"
@@ -138,16 +149,7 @@ class MainWindow(QMainWindow):
             entity = self.service.encounter.entities[row]
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
-
-            # Force full refresh from live state
-            self.refresh()
-
-            # Re-select same row and update stat panel
-            if row < self.entity_list.count():
-                self.entity_list.setCurrentRow(row)
-                hp_display = f"{new_hp} / {entity.max_hp}" if new_hp is not None else "- / -"
-                self.lbl_hp.setText(hp_display)
-                self.spin_hp.setValue(new_hp)
+            # The event system will trigger refresh via _on_event
 
     def _on_advance_turn(self):
         self.service.advance_turn()
