@@ -121,7 +121,9 @@ class MainWindow(QMainWindow):
             hp_display = f"{e.current_hp} / {e.max_hp}" if e.current_hp is not None else "- / -"
             self.lbl_hp.setText(hp_display)
             self.lbl_initiative.setText(str(e.initiative))
-            self.lbl_conditions.setText(", ".join([c.value for c in e.conditions]) if e.conditions else "None")
+            # Properly join conditions
+            conditions_text = ", ".join([c.value for c in e.conditions]) if e.conditions else "None"
+            self.lbl_conditions.setText(conditions_text)
             self.spin_hp.setValue(e.current_hp or 0)
 
     def _on_add_monster(self):
@@ -149,7 +151,12 @@ class MainWindow(QMainWindow):
             entity = self.service.encounter.entities[row]
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
-            # The event system will trigger refresh via _on_event
+            self.refresh()
+            if row < self.entity_list.count():
+                self.entity_list.setCurrentRow(row)
+                hp_display = f"{new_hp} / {entity.max_hp}" if new_hp is not None else "- / -"
+                self.lbl_hp.setText(hp_display)
+                self.spin_hp.setValue(new_hp)
 
     def _on_advance_turn(self):
         self.service.advance_turn()
