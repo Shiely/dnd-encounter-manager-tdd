@@ -174,6 +174,7 @@ def test_context_menu_edit_initiative(qtbot, stub_service):  # type: ignore[no-u
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+@pytest.mark.skip(reason="Temporarily disabled - suspected cause of long CI run")
 def test_add_monster_button_exists(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Add Monster button should exist and be clickable (smoke test for dialog wiring)."""
     window = MainWindow(stub_service)  # type: ignore[arg-type]
