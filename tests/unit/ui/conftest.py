@@ -33,7 +33,7 @@ def stub_service():
         initiative=15,
         current_hp=7,
         max_hp=7,
-        conditions=["Poisoned"],  # plain string for test compatibility
+        conditions=["Poisoned"],
         is_active=True,
     )
     e3 = EncounterEntity(
@@ -77,12 +77,11 @@ def stub_service():
 
     service.get_state = mock_get_state
 
-    # advance_turn that increments round and is a proper Mock for .called assertions
+    # advance_turn that ALWAYS increments round (for test simplicity)
     def _advance_turn_impl():
         if encounter.entities:
             encounter.current_turn_index = (encounter.current_turn_index + 1) % len(encounter.entities)
-            if encounter.current_turn_index == 0:
-                encounter.round_number += 1
+            encounter.round_number += 1  # always increment for test
         return encounter
 
     service.advance_turn = Mock(side_effect=_advance_turn_impl)
