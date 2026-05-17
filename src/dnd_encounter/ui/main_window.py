@@ -11,18 +11,8 @@ except ImportError:
 
 
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QListWidget,
-    QLabel,
-    QPushButton,
-    QSpinBox,
-    QGroupBox,
-    QFormLayout,
-    QMenu,
-    QInputDialog,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
+    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
 )
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
@@ -131,7 +121,6 @@ class MainWindow(QMainWindow):
             hp_display = f"{e.current_hp} / {e.max_hp}" if e.current_hp is not None else "- / -"
             self.lbl_hp.setText(hp_display)
             self.lbl_initiative.setText(str(e.initiative))
-            # Handle both Condition objects and plain strings (for test compatibility)
             if e.conditions:
                 if hasattr(e.conditions[0], "value"):
                     conditions_text = ", ".join([c.value for c in e.conditions])
@@ -167,12 +156,16 @@ class MainWindow(QMainWindow):
             entity = self.service.encounter.entities[row]
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
-            self.refresh()
-            if row < self.entity_list.count():
-                self.entity_list.setCurrentRow(row)
-                hp_display = f"{new_hp} / {entity.max_hp}" if new_hp is not None else "- / -"
-                self.lbl_hp.setText(hp_display)
-                self.spin_hp.setValue(new_hp)
+
+            # Direct optimistic update of the list item (most reliable)
+            item = self.entity_list.item(row)
+            if item:
+                hp_display = new_hp if new_hp is not None else "-"
+                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {hp_display})")
+
+            # Also update stat panel immediately
+            self.lbl_hp.setText(f"{new_hp} / {entity.max_hp}")
+            self.spin_hp.setValue(new_hp)
 
     def _on_advance_turn(self):
         self.service.advance_turn()
