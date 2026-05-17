@@ -1,23 +1,29 @@
 # adapters/outbound/event_publisher.py
-# Event publishing adapter
+# Qt signal-based event publisher for reactive GUI updates
+
+from PySide6.QtCore import QObject, Signal
 
 
-class EventPublisher:
-    """Publishes domain events to subscribers."""
+class EventPublisher(QObject):
+    """Publishes domain events. Emits Qt signals so GUI components can react."""
+
+    event_fired = Signal(str, dict)  # event_type, payload
 
     def __init__(self):
+        super().__init__()
         self._subscribers = []
 
     def subscribe(self, subscriber):
-        """Register a subscriber to receive published events."""
         self._subscribers.append(subscriber)
 
     def publish(self, event_type: str, payload: dict):
-        """Publish an event to all subscribers."""
+        print(f"[EVENT] {event_type}: {payload}")
+        # Notify traditional subscribers
         for subscriber in self._subscribers:
             subscriber(event_type, payload)
+        # Emit Qt signal for GUI components
+        self.event_fired.emit(event_type, payload)
 
     def publish_simple(self, event):
-        """Publish a simple event to all subscribers."""
         for subscriber in self._subscribers:
             subscriber(event)
