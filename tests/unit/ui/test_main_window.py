@@ -75,3 +75,29 @@ def test_sidebar_shows_current_turn_and_active_entities(qtbot, stub_service):  #
     assert any("Goblin #1" in text for text in item_texts)  # the current-turn entity
     assert any("Aragorn" in text for text in item_texts)
     assert any("Orc #2" in text for text in item_texts)  # inactive entity still shown
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_stat_panel_updates_on_entity_selection(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Selecting an entity in the list should update the stat panel with correct DTO values (including current-turn and inactive entities)."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    # Select the current-turn entity (row 1 = Goblin #1)
+    window.entity_list.setCurrentRow(1)
+    window._on_entity_selected(1)
+
+    assert window.lbl_name.text() == "Goblin #1"
+    assert window.lbl_hp.text() == "7 / 7"
+    assert window.lbl_initiative.text() == "15"
+    assert window.lbl_conditions.text() == "Poisoned"
+    assert window.spin_hp.value() == 7
+
+    # Verify selecting an inactive entity also works correctly
+    window.entity_list.setCurrentRow(2)
+    window._on_entity_selected(2)
+
+    assert window.lbl_name.text() == "Orc #2"
+    assert "0 / 15" in window.lbl_hp.text()
+    assert window.lbl_initiative.text() == "12"
