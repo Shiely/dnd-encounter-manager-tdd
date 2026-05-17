@@ -1,7 +1,14 @@
 # ui/main_window.py
 # Thin UI layer - only calls EncounterService and reacts to events
 
-from __future__ import annotations
+
+try:
+    import PySide6.QtWidgets  # noqa: F401
+
+    HAS_QT = True
+except ImportError:
+    HAS_QT = False
+
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
@@ -132,7 +139,13 @@ class MainWindow(QMainWindow):
             entity = state.entities[row]
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
-            self.refresh()
+
+            # Optimistic update of the list item (fixes sidebar not refreshing)
+            item = self.entity_list.item(row)
+            if item:
+                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {new_hp})")
+
+            self.refresh()  # Full sync
 
     def _on_advance_turn(self):
         self.service.advance_turn()
