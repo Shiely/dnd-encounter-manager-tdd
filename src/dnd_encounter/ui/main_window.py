@@ -140,12 +140,14 @@ class MainWindow(QMainWindow):
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
 
-            # Optimistic update of the list item (fixes sidebar not refreshing)
-            item = self.entity_list.item(row)
-            if item:
-                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {new_hp})")
+            # Force update of both the list and the stat panel
+            self.refresh()
 
-            self.refresh()  # Full sync
+            # Re-select the same row and update stat panel with new value
+            if row < self.entity_list.count():
+                self.entity_list.setCurrentRow(row)
+                self.lbl_hp.setText(f"{new_hp} / {entity.max_hp}")
+                self.spin_hp.setValue(new_hp)
 
     def _on_advance_turn(self):
         self.service.advance_turn()
