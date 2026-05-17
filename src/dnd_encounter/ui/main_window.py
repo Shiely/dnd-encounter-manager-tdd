@@ -92,25 +92,25 @@ class MainWindow(QMainWindow):
         return group
 
     def refresh(self):
-        state = self.service.get_state()
+        # Build directly from live in-memory encounter (bypasses fragile repository/DTO layer)
         self.entity_list.clear()
-
-        for entity in state.entities:
-            text = f"{entity.display_name} (Init: {entity.initiative}, HP: {entity.current_hp})"
+        for entity in self.service.encounter.entities:
+            hp_display = entity.current_hp if entity.current_hp is not None else "-"
+            text = f"{entity.display_name} (Init: {entity.initiative}, HP: {hp_display})"
             self.entity_list.addItem(text)
 
-        self.lbl_round.setText(f"Round: {state.round_number}")
+        self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
 
     def _on_entity_selected(self, row: int):
         if row < 0:
             return
-        state = self.service.get_state()
-        if row < len(state.entities):
-            e = state.entities[row]
+        if row < len(self.service.encounter.entities):
+            e = self.service.encounter.entities[row]
             self.lbl_name.setText(e.display_name)
-            self.lbl_hp.setText(f"{e.current_hp} / {e.max_hp}")
+            hp_display = f"{e.current_hp} / {e.max_hp}" if e.current_hp is not None else "- / -"
+            self.lbl_hp.setText(hp_display)
             self.lbl_initiative.setText(str(e.initiative))
-            self.lbl_conditions.setText(", ".join(e.conditions) if e.conditions else "None")
+            self.lbl_conditions.setText(", ".join([c.value for c in e.conditions]) if e.conditions else "None")
             self.spin_hp.setValue(e.current_hp or 0)
 
     def _on_add_monster(self):
@@ -134,19 +134,19 @@ class MainWindow(QMainWindow):
         if not self.entity_list.currentItem():
             return
         row = self.entity_list.currentRow()
-        state = self.service.get_state()
-        if row < len(state.entities):
-            entity = state.entities[row]
+        if row < len(self.service.encounter.entities):
+            entity = self.service.encounter.entities[row]
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
 
-            # Force update of both the list and the stat panel
+            # Force full refresh from live state
             self.refresh()
 
-            # Re-select the same row and update stat panel with new value
+            # Re-select same row and update stat panel
             if row < self.entity_list.count():
                 self.entity_list.setCurrentRow(row)
-                self.lbl_hp.setText(f"{new_hp} / {entity.max_hp}")
+                hp_display = f"{new_hp} / {entity.max_hp}" if new_hp is not None else "- / -"
+                self.lbl_hp.setText(hp_display)
                 self.spin_hp.setValue(new_hp)
 
     def _on_advance_turn(self):
@@ -160,19 +160,19 @@ class MainWindow(QMainWindow):
 
         menu = QMenu(self)
         row = self.entity_list.row(item)
-        state = self.service.get_state()
-        entity = state.entities[row]
+        if row < len(self.service.encounter.entities):
+            entity = self.service.encounter.entities[row]
 
-        remove_action = menu.addAction("Remove Entity")
-        remove_action.triggered.connect(lambda: self._remove_entity(entity.instance_id))
+            remove_action = menu.addAction("Remove Entity")
+            remove_action.triggered.connect(lambda: self._remove_entity(entity.instance_id))
 
-        rename_action = menu.addAction("Rename Entity")
-        rename_action.triggered.connect(lambda: self._rename_entity(entity.instance_id))
+            rename_action = menu.addAction("Rename Entity")
+            rename_action.triggered.connect(lambda: self._rename_entity(entity.instance_id))
 
-        edit_init_action = menu.addAction("Edit Initiative")
-        edit_init_action.triggered.connect(lambda: self._edit_initiative(entity.instance_id))
+            edit_init_action = menu.addAction("Edit Initiative")
+            edit_init_action.triggered.connect(lambda: self._edit_initiative(entity.instance_id))
 
-        menu.exec(self.entity_list.mapToGlobal(position))
+            menu.exec(self.entity_list.mapToGlobal(position))
 
     def _remove_entity(self, instance_id: str):
         self.service.remove_entity(instance_id)
@@ -196,8 +196,7 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key.Key_Delete:
             if self.entity_list.currentItem():
                 row = self.entity_list.currentRow()
-                state = self.service.get_state()
-                if row < len(state.entities):
-                    self._remove_entity(state.entities[row].instance_id)
+                if row < len(self.service.encounter.entities):
+                    self._remove_entity(self.service.encounter.entities[row].instance_id)
         else:
             super().keyPressEvent(event)
