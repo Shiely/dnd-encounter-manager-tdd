@@ -100,8 +100,9 @@ def test_add_player_multiple():
         service.add_player("Legolas", 20, 40)
 
         assert len(encounter.entities) == 2
-        assert encounter.entities[0].display_name == "Aragorn"
-        assert encounter.entities[1].display_name == "Legolas"
+        # Sorted by initiative descending (highest first)
+        assert encounter.entities[0].display_name == "Legolas"
+        assert encounter.entities[1].display_name == "Aragorn"
 
 
 def test_get_state_populates_current_turn_and_active():
