@@ -123,3 +123,62 @@ def test_context_menu_remove_entity(qtbot, stub_service):  # type: ignore[no-unt
     # Note: In real flow the service would update state; here we just verify the method is wired
     assert stub_service.remove_entity.called
     assert stub_service.remove_entity.call_args[0][0] == "e1"
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_keyboard_shortcuts(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Space should advance turn, Delete should remove selected entity."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    # Test Space = advance turn
+    qtbot.keyPress(window, Qt.Key.Key_Space)
+    assert stub_service.advance_turn.called
+
+    # Test Delete = remove (select first item first)
+    window.entity_list.setCurrentRow(0)
+    qtbot.keyPress(window, Qt.Key.Key_Delete)
+    assert stub_service.remove_entity.called
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_context_menu_rename_entity(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Context menu Rename should call rename_entity with correct instance_id."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    item = window.entity_list.item(0)
+    window.entity_list.setCurrentItem(item)
+
+    # Directly invoke the handler (simulates menu selection)
+    window._rename_entity("e1")
+    assert stub_service.rename_entity.called
+    assert stub_service.rename_entity.call_args[0][0] == "e1"
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_context_menu_edit_initiative(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Context menu Edit Initiative should call change_initiative with correct instance_id."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    item = window.entity_list.item(0)
+    window.entity_list.setCurrentItem(item)
+
+    window._edit_initiative("e1")
+    assert stub_service.change_initiative.called
+    assert stub_service.change_initiative.call_args[0][0] == "e1"
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_add_monster_button_exists(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Add Monster button should exist and be clickable (smoke test for dialog wiring)."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    assert window.btn_add_monster.isEnabled()
+    # We don't fully test the dialog here to keep scope small
