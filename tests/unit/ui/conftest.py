@@ -2,7 +2,7 @@
 # Fixtures for GUI tests
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 
 @pytest.fixture
@@ -66,3 +66,11 @@ def stub_service():
     service.advance_turn = Mock(side_effect=mock_advance_turn)
 
     return service
+
+
+@pytest.fixture(autouse=True)
+def mock_qinputdialog():
+    """Automatically mock QInputDialog so GUI tests don't hang on modal dialogs."""
+    with patch('PySide6.QtWidgets.QInputDialog.getText', return_value=("New Name", True)), \
+         patch('PySide6.QtWidgets.QInputDialog.getInt', return_value=(15, True)):
+        yield
