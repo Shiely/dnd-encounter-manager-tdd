@@ -58,3 +58,20 @@ def test_context_menu_exists(qtbot, stub_service):  # type: ignore[no-untyped-de
 
     policy = window.entity_list.contextMenuPolicy()
     assert policy == Qt.ContextMenuPolicy.CustomContextMenu
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
+def test_sidebar_shows_current_turn_and_active_entities(qtbot, stub_service):  # type: ignore[no-untyped-def]
+    """Sidebar list should reflect entities including is_current_turn and is_active from get_state()."""
+    window = MainWindow(stub_service)  # type: ignore[arg-type]
+    qtbot.addWidget(window)
+    window.show()
+
+    # After construction, refresh() calls get_state() which now returns our rich stub
+    assert window.entity_list.count() == 3
+
+    # Verify display names are populated (current turn entity should be present)
+    item_texts = [window.entity_list.item(i).text() for i in range(3)]
+    assert any("Goblin #1" in text for text in item_texts)  # the current-turn entity
+    assert any("Aragorn" in text for text in item_texts)
+    assert any("Orc #2" in text for text in item_texts)  # inactive entity still shown
