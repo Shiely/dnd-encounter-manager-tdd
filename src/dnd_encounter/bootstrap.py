@@ -115,11 +115,9 @@ def bootstrap() -> None:
 
     dice_roller = SimpleDiceRoller()
 
-    class SimplePublisher:
-        def publish(self, event_type: str, payload: dict) -> None:
-            print(f"[EVENT] {event_type}: {payload}")
+    from dnd_encounter.adapters.outbound.event_publisher import EventPublisher
 
-    publisher = SimplePublisher()
+    publisher = EventPublisher()
 
     from dnd_encounter.domain.entities.encounter import Encounter
 
@@ -134,7 +132,7 @@ def bootstrap() -> None:
         publisher=publisher,
     )
 
-    window = MainWindow(service)
+    window = MainWindow(service, publisher)
     window.show()
 
     sys.exit(app.exec())
