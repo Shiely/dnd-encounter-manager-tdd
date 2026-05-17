@@ -11,8 +11,18 @@ except ImportError:
 
 
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QGroupBox,
+    QFormLayout,
+    QMenu,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
@@ -123,7 +133,7 @@ class MainWindow(QMainWindow):
             self.lbl_initiative.setText(str(e.initiative))
             # Handle both Condition objects and plain strings (for test compatibility)
             if e.conditions:
-                if hasattr(e.conditions[0], 'value'):
+                if hasattr(e.conditions[0], "value"):
                     conditions_text = ", ".join([c.value for c in e.conditions])
                 else:
                     conditions_text = ", ".join(e.conditions)
