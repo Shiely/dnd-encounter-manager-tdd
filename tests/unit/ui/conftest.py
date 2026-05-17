@@ -71,6 +71,7 @@ def stub_service():
 @pytest.fixture(autouse=True)
 def mock_qinputdialog():
     """Automatically mock QInputDialog so GUI tests don't hang on modal dialogs."""
-    with patch('PySide6.QtWidgets.QInputDialog.getText', return_value=("New Name", True)), \
-         patch('PySide6.QtWidgets.QInputDialog.getInt', return_value=(15, True)):
+    with patch(
+        "PySide6.QtWidgets.QInputDialog.getText", return_value=("New Name", True)
+    ), patch("PySide6.QtWidgets.QInputDialog.getInt", return_value=(15, True)):
         yield
