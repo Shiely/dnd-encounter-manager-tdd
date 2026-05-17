@@ -143,7 +143,6 @@ def test_keyboard_shortcuts(qtbot, stub_service):  # type: ignore[no-untyped-def
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-@pytest.mark.skip(reason="Temporarily disabled - uses blocking QInputDialog")
 def test_context_menu_rename_entity(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Context menu Rename should call rename_entity with correct instance_id."""
     window = MainWindow(stub_service)  # type: ignore[arg-type]
@@ -160,7 +159,6 @@ def test_context_menu_rename_entity(qtbot, stub_service):  # type: ignore[no-unt
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-@pytest.mark.skip(reason="Temporarily disabled - uses blocking QInputDialog")
 def test_context_menu_edit_initiative(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Context menu Edit Initiative should call change_initiative with correct instance_id."""
     window = MainWindow(stub_service)  # type: ignore[arg-type]
@@ -176,7 +174,6 @@ def test_context_menu_edit_initiative(qtbot, stub_service):  # type: ignore[no-u
 
 
 @pytest.mark.skipif(not HAS_QT, reason="PySide6 not available")
-@pytest.mark.skip(reason="Temporarily disabled - suspected cause of long CI run")
 def test_add_monster_button_exists(qtbot, stub_service):  # type: ignore[no-untyped-def]
     """Add Monster button should exist and be clickable (smoke test for dialog wiring)."""
     window = MainWindow(stub_service)  # type: ignore[arg-type]
