@@ -22,3 +22,7 @@ class Encounter:
         if not active:
             return None
         return active[self.current_turn_index % len(active)]
+
+    def sort_by_initiative(self) -> None:
+        """Sort entities by initiative (highest first)."""
+        self.entities.sort(key=lambda e: e.initiative, reverse=True)
