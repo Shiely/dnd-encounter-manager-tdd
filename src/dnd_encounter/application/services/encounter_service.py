@@ -73,6 +73,7 @@ class EncounterService:
         )
         cmd.execute()
         self.undo_stack.push(cmd)
+        self.encounter.sort_by_initiative()  # <-- ensure correct order
         self.encounter_repo.save(self.encounter)
         return self.encounter
 
@@ -90,6 +91,7 @@ class EncounterService:
             monster_id=None,
         )
         self.encounter.entities.append(player)
+        self.encounter.sort_by_initiative()  # <-- ensure correct order
         self.encounter_repo.save(self.encounter)
 
     def edit_hp(self, instance_id: str, new_hp: int):
