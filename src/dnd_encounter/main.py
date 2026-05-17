@@ -1,13 +1,11 @@
 # src/dnd_encounter/main.py
-from PySide6.QtWidgets import QApplication
-import sys
+# Entry point for the D&D Encounter Manager application
+
+from dnd_encounter.bootstrap import bootstrap
 
 
-def main():
-    app = QApplication(sys.argv)
-    print("D&D Encounter Manager starting...")
-    # Full UI will be added later
-    sys.exit(app.exec())
+def main() -> None:
+    bootstrap()
 
 
 if __name__ == "__main__":
