@@ -19,6 +19,8 @@ from PySide6.QtGui import QKeyEvent
 
 
 from dnd_encounter.application.services.encounter_service import EncounterService
+from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
+from dnd_encounter.ui.add_player_dialog import AddPlayerDialog
 
 
 class MainWindow(QMainWindow):
