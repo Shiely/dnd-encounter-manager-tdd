@@ -51,12 +51,14 @@ def stub_service():
     service.encounter = encounter
 
     # Mock methods
-    service.get_state = Mock(return_value=Mock(
-        encounter_id="test",
-        round_number=1,
-        entities=[e1, e2, e3],
-        undo_available=False,
-    ))
+    service.get_state = Mock(
+        return_value=Mock(
+            encounter_id="test",
+            round_number=1,
+            entities=[e1, e2, e3],
+            undo_available=False,
+        )
+    )
     service.advance_turn = Mock()
     service.add_monster = Mock()
     service.edit_hp = Mock()
