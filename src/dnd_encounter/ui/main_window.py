@@ -17,17 +17,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
 
+
 from dnd_encounter.application.services.encounter_service import EncounterService
-from dnd_encounter.adapters.outbound.event_publisher import EventPublisher
-from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
-from dnd_encounter.ui.add_player_dialog import AddPlayerDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, service: EncounterService, publisher: EventPublisher | None = None) -> None:
+    def __init__(self, service: EncounterService) -> None:
         super().__init__()
         self.service = service
-        self.publisher = publisher
         self.setWindowTitle("D&D Encounter Manager")
         self.setGeometry(100, 100, 1000, 700)
 
@@ -41,16 +38,7 @@ class MainWindow(QMainWindow):
         stat_panel = self._create_stat_panel()
         layout.addWidget(stat_panel, 2)
 
-        # Subscribe to events for reactive updates
-        if self.publisher:
-            self.publisher.event_fired.connect(self._on_event)
-
         self.refresh()
-
-    def _on_event(self, event_type: str, payload: dict):
-        """React to domain events by refreshing the UI."""
-        if event_type in ("hp_changed", "entity_auto_removed", "entity_removed"):
-            self.refresh()
 
     def _create_sidebar(self) -> QWidget:
         group = QGroupBox("Initiative Order")
