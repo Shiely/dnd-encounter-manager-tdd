@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -42,7 +42,7 @@ class ConditionPanel(QDialog):
     Emits condition_toggled when user changes a checkbox.
     """
 
-    condition_toggled = Signal(str, str, bool)  # instance_id, condition_name, checked
+    condition_toggled = Signal(str, str, bool)  # (instance_id, condition_name, checked)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -63,9 +63,7 @@ class ConditionPanel(QDialog):
 
         for cond in CONDITIONS:
             cb = QCheckBox(cond)
-            cb.toggled.connect(
-                lambda checked, c=cond: self._on_toggled(c, checked)
-            )
+            cb.toggled.connect(self._make_handler(cond))
             layout.addWidget(cb)
             self._checkboxes[cond] = cb
 
@@ -75,6 +73,14 @@ class ConditionPanel(QDialog):
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
 
+    def _make_handler(self, condition_name: str):
+        def handler(checked: bool) -> None:
+            if self._instance_id:
+                self.condition_toggled.emit(
+                    self._instance_id, condition_name, checked
+                )
+        return handler
+
     def refresh(self, entity: EntityRowDTO | None) -> None:
         if entity is None:
             self._instance_id = None
@@ -83,7 +89,7 @@ class ConditionPanel(QDialog):
             return
 
         self._instance_id = entity.instance_id
-        current = set(entity.conditions or [])
+        current = set(getattr(entity, "conditions", []) or [])
 
         for name, cb in self._checkboxes.items():
             cb.blockSignals(True)
