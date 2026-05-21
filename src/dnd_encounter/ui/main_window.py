@@ -119,22 +119,16 @@ class MainWindow(QMainWindow):
             text = f"{entity.display_name} (Init: {entity.initiative}, HP: {hp_display})"
             self.entity_list.addItem(text)
 
-        # Restore selection + force stat panel update
-        if 0 <= current_row < self.entity_list.count():
-            self.entity_list.setCurrentRow(current_row)
-            self._on_entity_selected(current_row)
-        else:
-            # If no selection, clear labels
-            self.lbl_name.setText("-")
-            self.lbl_hp.setText("-")
-            self.lbl_initiative.setText("-")
-            self.lbl_conditions.setText("None")
-
         self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
 
         now = datetime.now().strftime("%H:%M:%S")
         self.lbl_debug_sidebar.setText(f"Last refresh: {now}")
         self.lbl_debug_stat.setText(now)
+
+        # Restore selection and force stat panel update
+        if 0 <= current_row < self.entity_list.count():
+            self.entity_list.setCurrentRow(current_row)
+            self._on_entity_selected(current_row)
         print("[DEBUG] refresh() finished")
 
     def _on_entity_selected(self, row: int):
