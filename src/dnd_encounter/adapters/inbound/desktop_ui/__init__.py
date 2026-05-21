@@ -1,1 +1,4 @@
-"""Inbound desktop UI adapters (PySide6)."""
+"""PySide6 desktop UI adapter components.
+
+Contains: MainWindow, SidebarWidget, StatBlockPanel, ConditionPanel, etc.
+"""
