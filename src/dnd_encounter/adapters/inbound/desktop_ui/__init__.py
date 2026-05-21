@@ -1,0 +1,1 @@
+"""Inbound desktop UI adapters (PySide6)."""
