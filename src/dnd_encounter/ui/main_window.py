@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
 
+from datetime import datetime
+
 
 from dnd_encounter.application.services.encounter_service import EncounterService
 from dnd_encounter.ui.add_monster_dialog import AddMonsterDialog
@@ -67,6 +69,10 @@ class MainWindow(QMainWindow):
         self.lbl_round = QLabel("Round: 1")
         layout.addWidget(self.lbl_round)
 
+        # Temporary debug label to prove refresh() is running
+        self.lbl_debug = QLabel("Last refresh: never")
+        layout.addWidget(self.lbl_debug)
+
         return group
 
     def _create_stat_panel(self) -> QWidget:
@@ -101,6 +107,9 @@ class MainWindow(QMainWindow):
             self.entity_list.addItem(text)
 
         self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
+
+        # Update debug timestamp
+        self.lbl_debug.setText(f"Last refresh: {datetime.now().strftime('%H:%M:%S')}")
 
     def _on_entity_selected(self, row: int):
         if row < 0:
