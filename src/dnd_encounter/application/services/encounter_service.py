@@ -99,6 +99,7 @@ class EncounterService:
             encounter=self.encounter,
             instance_id=instance_id,
             new_hp=new_hp,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
@@ -108,16 +109,19 @@ class EncounterService:
         cmd = RemoveEntityCommand(
             encounter=self.encounter,
             instance_id=instance_id,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
         self.encounter_repo.save(self.encounter)
 
     def toggle_condition(self, instance_id: str, condition):
+        # TODO: ensure condition is Condition object or convert
         cmd = ToggleConditionCommand(
             encounter=self.encounter,
             instance_id=instance_id,
             condition=condition,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
@@ -128,6 +132,7 @@ class EncounterService:
             encounter=self.encounter,
             instance_id=instance_id,
             new_initiative=new_initiative,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
@@ -138,6 +143,7 @@ class EncounterService:
             encounter=self.encounter,
             instance_id=instance_id,
             new_name=new_name,
+            publisher=self.publisher,
         )
         cmd.execute()
         self.undo_stack.push(cmd)
