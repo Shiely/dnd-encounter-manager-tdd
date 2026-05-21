@@ -111,17 +111,31 @@ class MainWindow(QMainWindow):
         return group
 
     def refresh(self):
+        print("[DEBUG] refresh() called")
+        current_row = self.entity_list.currentRow()
         self.entity_list.clear()
         for entity in self.service.encounter.entities:
             hp_display = entity.current_hp if entity.current_hp is not None else "-"
             text = f"{entity.display_name} (Init: {entity.initiative}, HP: {hp_display})"
             self.entity_list.addItem(text)
 
+        # Restore selection + force stat panel update
+        if 0 <= current_row < self.entity_list.count():
+            self.entity_list.setCurrentRow(current_row)
+            self._on_entity_selected(current_row)
+        else:
+            # If no selection, clear labels
+            self.lbl_name.setText("-")
+            self.lbl_hp.setText("-")
+            self.lbl_initiative.setText("-")
+            self.lbl_conditions.setText("None")
+
         self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
 
         now = datetime.now().strftime("%H:%M:%S")
         self.lbl_debug_sidebar.setText(f"Last refresh: {now}")
         self.lbl_debug_stat.setText(now)
+        print("[DEBUG] refresh() finished")
 
     def _on_entity_selected(self, row: int):
         if row < 0:
@@ -160,15 +174,20 @@ class MainWindow(QMainWindow):
                 self.refresh()
 
     def _on_edit_hp(self):
-        # Very simplified for debugging
-        if self.entity_list.currentItem():
-            row = self.entity_list.currentRow()
-            if row < len(self.service.encounter.entities):
-                entity = self.service.encounter.entities[row]
-                new_hp = self.spin_hp.value()
-                self.service.edit_hp(entity.instance_id, new_hp)
-
+        print("[DEBUG] _on_edit_hp triggered")
+        try:
+            if self.entity_list.currentItem():
+                row = self.entity_list.currentRow()
+                if row < len(self.service.encounter.entities):
+                    entity = self.service.encounter.entities[row]
+                    new_hp = self.spin_hp.value()
+                    print(f"[DEBUG] calling service.edit_hp id={entity.instance_id} new_hp={new_hp}")
+                    self.service.edit_hp(entity.instance_id, new_hp)
+                    print("[DEBUG] service.edit_hp returned successfully")
+        except Exception as e:
+            print(f"[DEBUG] ERROR in _on_edit_hp: {type(e).__name__}: {e}")
         self.refresh()
+        print("[DEBUG] _on_edit_hp finished")
 
     def _on_advance_turn(self):
         self.service.advance_turn()
