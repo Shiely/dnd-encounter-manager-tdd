@@ -147,15 +147,17 @@ class MainWindow(QMainWindow):
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
 
-            # Direct optimistic update of the list item (most reliable)
+            # === Strong direct optimistic update for reliability ===
             item = self.entity_list.item(row)
             if item:
-                hp_display = new_hp if new_hp is not None else "-"
-                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {hp_display})")
+                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {new_hp})")
 
-            # Also update stat panel immediately
+            # Update stat panel immediately
             self.lbl_hp.setText(f"{new_hp} / {entity.max_hp}")
             self.spin_hp.setValue(new_hp)
+
+            # Final safety refresh
+            self.refresh()
 
     def _on_advance_turn(self):
         self.service.advance_turn()
