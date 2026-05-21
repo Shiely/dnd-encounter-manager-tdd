@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from .initiative_list_model import EntityRowDTO, EncounterStateDTO
+    from .initiative_list_model import EncounterStateDTO
 except ImportError:
-    from initiative_list_model import EntityRowDTO, EncounterStateDTO  # type: ignore
+    from initiative_list_model import EncounterStateDTO  # type: ignore
 
 
 class StatBlockPanel(QScrollArea):
@@ -55,7 +55,14 @@ class StatBlockPanel(QScrollArea):
             self._current_instance_id = None
             return
 
-        entity = next((e for e in state.entities if e.instance_id == instance_id), None)
+        entity = next((e for e in getattr(state, "entities", [])), None)
+        if entity is None or getattr(entity, "instance_id", None) != instance_id:
+            # Fallback linear search if needed
+            for e in getattr(state, "entities", []):
+                if getattr(e, "instance_id", None) == instance_id:
+                    entity = e
+                    break
+
         if entity is None:
             self._title.setText("Entity not found")
             self._content.setText("")
@@ -63,22 +70,20 @@ class StatBlockPanel(QScrollArea):
 
         self._current_instance_id = instance_id
 
-        # Title
-        title_text = entity.display_name
-        if entity.is_monster:
+        title_text = getattr(entity, "display_name", "Unknown")
+        if getattr(entity, "is_monster", False):
             title_text += " (Monster)"
         else:
             title_text += " (Player)"
         self._title.setText(title_text)
 
-        # Content
         lines: list[str] = []
-        lines.append(f"<b>Initiative:</b> {entity.initiative}")
+        lines.append(f"<b>Initiative:</b> {getattr(entity, 'initiative', '?')}")
 
-        if entity.is_monster and entity.current_hp is not None:
+        if getattr(entity, "is_monster", False) and getattr(entity, "current_hp", None) is not None:
             lines.append(f"<b>Current HP:</b> {entity.current_hp}")
 
-        conditions = entity.conditions or []
+        conditions = getattr(entity, "conditions", []) or []
         if conditions:
             lines.append(f"<b>Conditions:</b> {', '.join(conditions)}")
         else:
