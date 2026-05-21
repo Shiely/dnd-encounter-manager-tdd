@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 import sys
 from typing import Any
 
+
 from dnd_encounter.application.services.encounter_service import EncounterService
 from dnd_encounter.adapters.outbound.json_monster_repository import JsonMonsterRepository
 from dnd_encounter.adapters.outbound.json_encounter_repository import JsonEncounterRepository
@@ -115,10 +116,6 @@ def bootstrap() -> None:
 
     dice_roller = SimpleDiceRoller()
 
-    from dnd_encounter.adapters.outbound.event_publisher import EventPublisher
-
-    publisher = EventPublisher()
-
     from dnd_encounter.domain.entities.encounter import Encounter
 
     encounter = Encounter(encounter_id="default")
@@ -129,10 +126,10 @@ def bootstrap() -> None:
         encounter_repo=encounter_repo,
         undo_stack=undo_stack,
         dice_roller=dice_roller,
-        publisher=publisher,
+        publisher=None,  # temporarily disabled for MVPO stability
     )
 
-    window = MainWindow(service, publisher)
+    window = MainWindow(service)
     window.show()
 
     sys.exit(app.exec())
