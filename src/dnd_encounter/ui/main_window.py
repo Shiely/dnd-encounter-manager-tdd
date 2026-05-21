@@ -11,8 +11,18 @@ except ImportError:
 
 
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLabel,
-    QPushButton, QSpinBox, QGroupBox, QFormLayout, QMenu, QInputDialog
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QGroupBox,
+    QFormLayout,
+    QMenu,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QKeyEvent
@@ -69,7 +79,6 @@ class MainWindow(QMainWindow):
         self.lbl_round = QLabel("Round: 1")
         layout.addWidget(self.lbl_round)
 
-        # Debug timestamp for Initiative Order panel
         self.lbl_debug_sidebar = QLabel("Last refresh: never")
         layout.addWidget(self.lbl_debug_sidebar)
 
@@ -94,7 +103,6 @@ class MainWindow(QMainWindow):
         self.btn_edit_hp = QPushButton("Set HP")
         self.btn_edit_hp.clicked.connect(self._on_edit_hp)
 
-        # Debug timestamp for Selected Entity panel
         self.lbl_debug_stat = QLabel("Last refresh: never")
         layout.addRow("Last refresh:", self.lbl_debug_stat)
 
@@ -103,7 +111,6 @@ class MainWindow(QMainWindow):
         return group
 
     def refresh(self):
-        # Build directly from live in-memory encounter
         self.entity_list.clear()
         for entity in self.service.encounter.entities:
             hp_display = entity.current_hp if entity.current_hp is not None else "-"
@@ -112,7 +119,7 @@ class MainWindow(QMainWindow):
 
         self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
 
-        now = datetime.now().strftime('%H:%M:%S')
+        now = datetime.now().strftime("%H:%M:%S")
         self.lbl_debug_sidebar.setText(f"Last refresh: {now}")
         self.lbl_debug_stat.setText(now)
 
@@ -153,16 +160,15 @@ class MainWindow(QMainWindow):
                 self.refresh()
 
     def _on_edit_hp(self):
-        if not self.entity_list.currentItem():
-            return
-        row = self.entity_list.currentRow()
-        if row < len(self.service.encounter.entities):
-            entity = self.service.encounter.entities[row]
-            new_hp = self.spin_hp.value()
-            self.service.edit_hp(entity.instance_id, new_hp)
+        # Very simplified for debugging
+        if self.entity_list.currentItem():
+            row = self.entity_list.currentRow()
+            if row < len(self.service.encounter.entities):
+                entity = self.service.encounter.entities[row]
+                new_hp = self.spin_hp.value()
+                self.service.edit_hp(entity.instance_id, new_hp)
 
-            # Always refresh so we can observe if it actually runs
-            self.refresh()
+        self.refresh()
 
     def _on_advance_turn(self):
         self.service.advance_turn()
