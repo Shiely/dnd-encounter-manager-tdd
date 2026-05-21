@@ -69,9 +69,9 @@ class MainWindow(QMainWindow):
         self.lbl_round = QLabel("Round: 1")
         layout.addWidget(self.lbl_round)
 
-        # Temporary debug label to prove refresh() is running
-        self.lbl_debug = QLabel("Last refresh: never")
-        layout.addWidget(self.lbl_debug)
+        # Debug timestamp for Initiative Order panel
+        self.lbl_debug_sidebar = QLabel("Last refresh: never")
+        layout.addWidget(self.lbl_debug_sidebar)
 
         return group
 
@@ -94,6 +94,10 @@ class MainWindow(QMainWindow):
         self.btn_edit_hp = QPushButton("Set HP")
         self.btn_edit_hp.clicked.connect(self._on_edit_hp)
 
+        # Debug timestamp for Selected Entity panel
+        self.lbl_debug_stat = QLabel("Last refresh: never")
+        layout.addRow("Last refresh:", self.lbl_debug_stat)
+
         layout.addRow(self.spin_hp, self.btn_edit_hp)
 
         return group
@@ -108,8 +112,9 @@ class MainWindow(QMainWindow):
 
         self.lbl_round.setText(f"Round: {self.service.encounter.round_number}")
 
-        # Update debug timestamp
-        self.lbl_debug.setText(f"Last refresh: {datetime.now().strftime('%H:%M:%S')}")
+        now = datetime.now().strftime('%H:%M:%S')
+        self.lbl_debug_sidebar.setText(f"Last refresh: {now}")
+        self.lbl_debug_stat.setText(now)
 
     def _on_entity_selected(self, row: int):
         if row < 0:
@@ -156,16 +161,7 @@ class MainWindow(QMainWindow):
             new_hp = self.spin_hp.value()
             self.service.edit_hp(entity.instance_id, new_hp)
 
-            # === Strong direct optimistic update for reliability ===
-            item = self.entity_list.item(row)
-            if item:
-                item.setText(f"{entity.display_name} (Init: {entity.initiative}, HP: {new_hp})")
-
-            # Update stat panel immediately
-            self.lbl_hp.setText(f"{new_hp} / {entity.max_hp}")
-            self.spin_hp.setValue(new_hp)
-
-            # Final safety refresh
+            # Always refresh so we can observe if it actually runs
             self.refresh()
 
     def _on_advance_turn(self):
