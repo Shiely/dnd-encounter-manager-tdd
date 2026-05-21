@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from PySide6.QtCore import Signal, Slot
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QLabel,
     QCheckBox,
+    QDialog,
+    QLabel,
     QPushButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -17,9 +17,21 @@ except ImportError:
 
 
 CONDITIONS = [
-    "Blinded", "Charmed", "Deafened", "Frightened", "Grappled",
-    "Incapacitated", "Invisible", "Paralyzed", "Petrified", "Poisoned",
-    "Prone", "Restrained", "Stunned", "Unconscious", "Exhaustion",
+    "Blinded",
+    "Charmed",
+    "Deafened",
+    "Frightened",
+    "Grappled",
+    "Incapacitated",
+    "Invisible",
+    "Paralyzed",
+    "Petrified",
+    "Poisoned",
+    "Prone",
+    "Restrained",
+    "Stunned",
+    "Unconscious",
+    "Exhaustion",
 ]
 
 
@@ -51,7 +63,9 @@ class ConditionPanel(QDialog):
 
         for cond in CONDITIONS:
             cb = QCheckBox(cond)
-            cb.toggled.connect(lambda checked, c=cond: self._on_toggled(c, checked))
+            cb.toggled.connect(
+                lambda checked, c=cond: self._on_toggled(c, checked)
+            )
             layout.addWidget(cb)
             self._checkboxes[cond] = cb
 
