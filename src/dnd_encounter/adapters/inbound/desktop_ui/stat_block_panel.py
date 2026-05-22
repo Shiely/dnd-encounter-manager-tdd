@@ -14,6 +14,8 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from pathlib import Path
 
+from dnd_encounter.utils.monster_image_manager import MonsterImageManager
+
 # Use canonical DTO from application layer (self-heal for consistency with Sidebar)
 try:
     from dnd_encounter.application.dto.encounter_dto import EncounterStateDTO, EntityRowDTO
@@ -36,6 +38,12 @@ class StatBlockPanel(QScrollArea):
         self.setObjectName("StatBlockPanel")
         self.setWidgetResizable(True)
         self._monster_repo = monster_repo   # optional – used for rich monster details
+
+        # On-demand monster token downloader (polished background fetching + caching)
+        self._image_manager = MonsterImageManager()
+        self._image_manager.image_ready.connect(self._on_image_ready)
+        self._image_manager.image_failed.connect(self._on_image_failed)
+        self._current_monster_id_for_image: str | None = None
 
         self._container = QWidget()
         self.setWidget(self._container)
@@ -295,84 +303,48 @@ class StatBlockPanel(QScrollArea):
         return "<br>".join(parts)
 
     def _load_monster_image(self, definition) -> None:
-        """Try to load a monster token using the real 5eTools path conventions.
-
-        5eTools stores tokens at:
-            img/bestiary/tokens/<SOURCE>/<SanitizedName>.webp
-        (with .png fallbacks for user-provided files)
         """
-        self._clear_image()
+        Polished image loading with on-demand download support.
 
-        candidates: list[Path] = []
+        - Shows local image immediately if present
+        - Shows "Downloading token..." + triggers background download if the monster has official art
+        """
+        self._current_monster_id_for_image = getattr(definition, "id", None)
 
-        name = getattr(definition, "name", "") or ""
-        source = getattr(definition, "source", "") or ""
-        mid = getattr(definition, "id", "") or ""
-        stored_path = getattr(definition, "image_path", None)
+        local_path = self._image_manager.get_local_image(definition)
+        if local_path:
+            self._display_image(local_path)
+            return
 
-        # 1. Respect any explicit path we stored during import (under data/images/)
-        if stored_path:
-            candidates.append(Path("data/images") / stored_path)
-            # Also try .webp variant
-            if stored_path.endswith(".png"):
-                candidates.append(Path("data/images") / stored_path.replace(".png", ".webp"))
-
-        # Sanitized name used by 5eTools
-        def sanitize(n: str) -> str:
-            return (
-                n.replace(" ", "_")
-                 .replace("'", "")
-                 .replace("/", "-")
-                 .replace(":", "")
-                 .replace("?", "")
-                 .replace("!", "")
-                 .replace(",", "")
-            )
-
-        slug = sanitize(name)
-        src = source.upper() if source else ""
-
-        # 2. Most accurate 5eTools-style paths (what the real site uses)
-        # Primary location when user clones 5etools-img
-        img_root = Path("data/5etools-img/img")
-
-        if src:
-            candidates.append(img_root / "bestiary/tokens" / src / f"{slug}.webp")
-            candidates.append(img_root / "bestiary/tokens" / src / f"{slug}.png")
-        candidates.append(img_root / "bestiary/tokens" / f"{slug}.webp")
-        candidates.append(img_root / "bestiary/tokens" / f"{slug}.png")
-
-        # 3. User-friendly flat location under data/images/
-        images_root = Path("data/images/bestiary/tokens")
-        if src:
-            candidates.append(images_root / src / f"{slug}.webp")
-            candidates.append(images_root / src / f"{slug}.png")
-        candidates.append(images_root / f"{slug}.webp")
-        candidates.append(images_root / f"{slug}.png")
-
-        # Also try id-based names
-        if mid and mid != slug:
-            candidates.append(images_root / f"{mid}.png")
-            candidates.append(images_root / f"{mid}.webp")
-
-        # Try all candidates
-        for candidate in candidates:
-            if candidate.exists():
-                pix = QPixmap(str(candidate))
-                if not pix.isNull():
-                    scaled = pix.scaled(
-                        140, 140,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
-                    )
-                    self._image_label.setPixmap(scaled)
-                    self._image_label.setToolTip(str(candidate))
-                    return
-
-        # Nothing found
-        self._image_label.setText("no token")
+        if getattr(definition, "has_token", False):
+            self._image_label.setText("Downloading\n token...")
+            self._image_label.setToolTip("Fetching from 5eTools image mirror in the background...")
+            self._image_manager.request_image(definition)
+        else:
+            self._clear_image()
 
     def _clear_image(self) -> None:
         self._image_label.clear()
         self._image_label.setText("no token")
         self._image_label.setToolTip("")
+        self._current_monster_id_for_image = None
+
+    def _display_image(self, path: Path) -> None:
+        pix = QPixmap(str(path))
+        if not pix.isNull():
+            scaled = pix.scaled(140, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            self._image_label.setPixmap(scaled)
+            self._image_label.setToolTip(str(path))
+
+    @Slot(str, Path)
+    def _on_image_ready(self, monster_id: str, path: Path):
+        """Called when a background download finishes successfully."""
+        if monster_id == self._current_monster_id_for_image:
+            self._display_image(path)
+
+    @Slot(str, str)
+    def _on_image_failed(self, monster_id: str, error: str):
+        """Called when background download fails."""
+        if monster_id == self._current_monster_id_for_image:
+            self._image_label.setText("Download\nfailed")
+            self._image_label.setToolTip(f"Could not download token: {error}")

@@ -42,6 +42,8 @@ class EncounterService:
         current = self.encounter.current_entity()
         entities = []
         for entity in self.encounter.entities:
+            if not entity.is_active:
+                continue  # Removed entities are hidden from the UI (soft-delete for undo support)
             entities.append(
                 EntityRowDTO(
                     instance_id=entity.instance_id,

@@ -61,11 +61,14 @@ class AddMonsterDialog(QDialog):
 
         # Buttons
         btn_layout = QHBoxLayout()
+        self.btn_create_custom = QPushButton("Create Custom Monster…")
+        self.btn_create_custom.clicked.connect(self._on_create_custom)
         self.btn_ok = QPushButton("Add")
         self.btn_ok.clicked.connect(self._on_add)
         self.btn_cancel = QPushButton("Cancel")
         self.btn_cancel.clicked.connect(self.reject)
 
+        btn_layout.addWidget(self.btn_create_custom)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_ok)
         btn_layout.addWidget(self.btn_cancel)
@@ -151,3 +154,26 @@ class AddMonsterDialog(QDialog):
 
     def get_selected_monster_id(self) -> str | None:
         return self.selected_monster_id
+
+    def _on_create_custom(self):
+        """Open the monster creation form."""
+        from .monster_form_dialog import MonsterFormDialog
+
+        repo = getattr(self.service, "monster_repo", None) if self.service else None
+        dialog = MonsterFormDialog(repo=repo, parent=self)
+        if dialog.exec():
+            new_monster = dialog.get_created_monster()
+            if new_monster:
+                # Refresh the list so the new monster appears
+                self._populate_monster_list()
+
+                # Try to select the newly created monster
+                for i in range(self.monster_list.count()):
+                    item = self.monster_list.item(i)
+                    if item and item.data(Qt.ItemDataRole.UserRole) == new_monster.id:
+                        self.monster_list.setCurrentItem(item)
+                        break
+
+                # Optionally auto-accept so the user can immediately add it
+                # For now we just leave the dialog open so user can decide
+                self.search_edit.clear()  # clear filter so new monster is visible
