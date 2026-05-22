@@ -65,6 +65,11 @@ This document combines the key information from Parts 1–4 into one compact ref
 
 **Key Rule:** Dependency arrows always point inward.
 
+**Current UI Status (May 2026):**  
+The desktop UI has been successfully migrated to the adapters layer (`adapters/inbound/desktop_ui/`). The new `MainWindow` (with SidebarWidget, StatBlockPanel, ConditionPanel, and signal-driven updates via `EncounterSignals`) is now the active implementation. The legacy `ui/` folder is deprecated (see its README for details).
+
+**Migration complete as of late May 2026.** All new UI development must happen inside `src/dnd_encounter/adapters/inbound/desktop_ui/`.
+
 ---
 
 ## 5. Data Transfer Objects (DTOs)
@@ -101,7 +106,106 @@ UI **never** touches domain entities directly.
 
 ---
 
-## 8. TDD Build Sequence (Critical for Agent)
+## 8. Current Implementation Status (May 2026)
+
+**Completed:**
+- Full Hexagonal Architecture skeleton (Domain → Ports → Application → Adapters)
+- Strict command pattern (`EditHpCommand` as the canonical example, `InMemoryUndoStack`)
+- `EncounterService` + DTO boundary (`EncounterStateDTO`, `EntityRowDTO`)
+- `EncounterSignals` (Qt signals for reactive updates)
+- **UI Migration (UI-1 through UI-5)**: New `MainWindow` + migrated dialogs live in `adapters/inbound/desktop_ui/`. Old `ui/` is deprecated.
+- 18+ professional UI tests passing for the new architecture (pytest-qt, headless).
+- Bootstrap with 60s auto-save timer + platformdirs persistence wiring.
+- Ruff + mypy clean on the new code paths.
+
+**Current Gaps (what the next phase must address):**
+- Keyboard shortcuts not yet wired in the new `MainWindow`.
+- No context menu on the initiative list (right-click remove/rename/edit initiative).
+- `StatBlockPanel` is minimal (needs richer monster stat block display when `MonsterDefinition` data is available).
+- ConditionPanel integration is basic.
+- Full feature parity with the behavioral spec from Parts 1–3 (monster stat blocks, import flow, better HP editing UI).
+
+---
+
+## 9. Next Implementation Phase (Post-Migration)
+
+**Phase Name:** New UI Interaction Polish & Feature Completion (TDD-driven)
+
+**Guiding Principle:** Every new capability must be added using strict TDD:
+1. Write a failing test first (red).
+2. Implement the minimal code to make it pass (green).
+3. Refactor + self-heal (ruff/mypy/tests green).
+4. Only then move to the next slice.
+
+**Priority Order for this Phase (small vertical slices):**
+
+1. **Keyboard Shortcuts** (highest immediate value)
+   - Space / Ctrl+→ → Advance Turn
+   - Delete / Backspace → Remove selected entity
+   - Ctrl+Z → Undo
+   - Tests first in `test_new_main_window.py` using `qtbot.keyClick`
+
+2. **Context Menu on Sidebar**
+   - Right-click → Remove, Rename, Edit Initiative
+   - Must update `InitiativeListModel` + `SidebarWidget`
+
+3. **Richer StatBlockPanel**
+   - Show more fields from `EntityRowDTO` + future full monster stats
+   - Better formatting and live HP display
+
+4. **Robust Condition Flow**
+   - Open ConditionPanel for the currently selected entity from sidebar
+   - Ensure selection + toggle updates propagate via signals
+
+5. **Deeper Feature Work** (after above)
+   - Full monster stat block loading from JSON
+   - `ImportService` integration
+   - Better error display via `error_occurred` signal
+
+**Rule:** No implementation work on any of the above without a red test first.
+
+---
+
+## 10. How to Run the Application
+
+### Running the Desktop UI (Windows)
+
+From the project root:
+
+```bash
+cd encounter-manager/encounter-manager-v2/dnd-encounter-manager-tdd
+uv run python -m src.dnd_encounter.main
+```
+
+Or if `main.py` is not yet updated for the new bootstrap:
+
+```bash
+uv run python -c "
+from dnd_encounter.bootstrap import bootstrap
+window = bootstrap()
+window.show()
+from PySide6.QtWidgets import QApplication
+QApplication.instance().exec()
+"
+```
+
+**For headless / CI testing** (already used by pytest):
+
+```bash
+QT_QPA_PLATFORM=offscreen uv run pytest tests/unit/ui/ -q
+```
+
+### Running the Full Test Suite + Lint
+
+```bash
+uv run ruff check && uv run ruff format --check
+uv run mypy src
+uv run pytest -q
+```
+
+---
+
+## 11. TDD Build Sequence (Critical for Agent)
 
 The agent **must** follow this order strictly:
 
@@ -126,7 +230,7 @@ The agent **must** follow this order strictly:
 
 ---
 
-## 9. Key Design Decisions
+## 12. Key Design Decisions
 
 - Use **dataclasses** in Domain (no Pydantic)
 - `EncounterStateDTO` returned by every service method
@@ -137,7 +241,7 @@ The agent **must** follow this order strictly:
 
 ---
 
-## 10. Implementation Checklist (for Agent)
+## 13. Implementation Checklist (for Agent)
 
 Before considering any task complete, verify:
 
@@ -150,7 +254,7 @@ Before considering any task complete, verify:
 
 ---
 
-## 11. File Structure (High Level)
+## 14. File Structure (High Level)
 
 ```
 dnd-encounter-manager/
@@ -169,4 +273,4 @@ dnd-encounter-manager/
 
 *This document was synthesized from Parts 1–4 for agent usability and user reference.*
 
-*Last updated: May 2026*
+*Last updated: May 2026 (UI migration complete + Next Phase defined)*

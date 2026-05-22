@@ -116,7 +116,14 @@ class EncounterService:
         self.encounter_repo.save(self.encounter)
 
     def toggle_condition(self, instance_id: str, condition):
-        # TODO: ensure condition is Condition object or convert
+        # Convert string from UI to proper Condition enum
+        if isinstance(condition, str):
+            from dnd_encounter.domain.value_objects.condition import Condition
+            condition = next((c for c in Condition if c.value == condition), None)
+            if condition is None:
+                print(f"[Service] Unknown condition string: {condition}")
+                return
+
         cmd = ToggleConditionCommand(
             encounter=self.encounter,
             instance_id=instance_id,
@@ -155,3 +162,18 @@ class EncounterService:
             if self.encounter.current_turn_index == 0:
                 self.encounter.round_number += 1
             self.encounter_repo.save(self.encounter)
+
+    def undo(self) -> bool:
+        """Undo the last command if possible. Returns True if something was undone."""
+        if self.undo_stack.is_empty():
+            return False
+
+        cmd = self.undo_stack.pop()
+        if cmd:
+            cmd.undo()
+            self.encounter_repo.save(self.encounter)
+            return True
+        return False
+
+    def can_undo(self) -> bool:
+        return not self.undo_stack.is_empty()

@@ -38,13 +38,29 @@ class AddMonsterDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def _populate_monster_list(self) -> None:
+        repo = getattr(self.service, 'monster_repo', None) if self.service else None
+        if repo and hasattr(repo, 'list_all'):
+            try:
+                monsters = repo.list_all()
+                if isinstance(monsters, list) and len(monsters) > 0 and hasattr(monsters[0], 'name'):
+                    monsters = sorted(monsters, key=lambda m: m.name)
+                    for monster in monsters:
+                        cr_str = getattr(getattr(monster, 'challenge_rating', None), 'value', str(getattr(monster, 'challenge_rating', '')))
+                        display = f"{monster.name} (CR {cr_str})"
+                        self.monster_list.addItem(display)
+                        item = self.monster_list.item(self.monster_list.count() - 1)
+                        if item:
+                            item.setData(Qt.ItemDataRole.UserRole, getattr(monster, 'id', ''))
+                    return
+            except Exception:
+                pass
+        # Fallback to hardcoded (for stub tests)
         monsters = [
             ("goblin", "Goblin (CR 1/4)"),
             ("orc", "Orc (CR 1/2)"),
             ("ogre", "Ogre (CR 2)"),
             ("troll", "Troll (CR 5)"),
         ]
-
         for monster_id, display in monsters:
             self.monster_list.addItem(display)
             item = self.monster_list.item(self.monster_list.count() - 1)

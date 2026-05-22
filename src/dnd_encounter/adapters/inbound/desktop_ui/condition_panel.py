@@ -11,9 +11,9 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from .initiative_list_model import EntityRowDTO
+    from dnd_encounter.application.dto.encounter_dto import EntityRowDTO
 except ImportError:
-    from initiative_list_model import EntityRowDTO  # type: ignore
+    from .initiative_list_model import EntityRowDTO  # type: ignore fallback
 
 
 CONDITIONS = [

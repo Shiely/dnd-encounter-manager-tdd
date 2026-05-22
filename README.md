@@ -4,20 +4,20 @@
 
 This is a collaborative experiment between Shiely and Grok to build the app exactly as designed in the spec documents (Parts 1-4 in Google Drive), following the precise TDD sequence from Part 4.
 
-## Current Status (May 14, 2026 - 21:35 PDT)
+## Current Status (May 2026)
 
-- ✅ Phase A–F: Complete
-- ✅ Ruff: Passing
-- ✅ mypy: Relaxed (tech debt - will re-enable later)
-- 🔄 CI: Running with latest fixes
+- ✅ Phases A–F (Core Architecture + Commands + Services): Complete
+- ✅ Phase G – UI Migration (UI-1 through UI-5): **Complete**
+  - New `MainWindow` + all widgets live in `adapters/inbound/desktop_ui/`
+  - 18+ pytest-qt tests green for the new UI
+  - Old `ui/` folder deprecated
+- ✅ Ruff: Clean
+- ✅ mypy: Passing on new code (relaxed globally for now)
+- ✅ Self-healing discipline maintained throughout
 
-**Goal**: First green CI run
+**Next Phase (active):** "New UI Interaction Polish & Feature Completion"  
+Following strict TDD: Keyboard shortcuts first, then context menus, richer StatBlockPanel, etc.
 
-## Technical Debt
-- Ruff `ANN` rules disabled
-- mypy `strict = false` + `ignore_missing_imports = true`
-
-## Next Steps
-Finish Phase G (UI) and gradually re-enable strict linting/type checking.
+**Goal**: Daily-driver feature parity with the original spec while keeping the architecture pure.
 
 Built with Grok — May 2026
