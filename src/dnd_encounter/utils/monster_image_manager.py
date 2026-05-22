@@ -13,8 +13,8 @@ Usage:
 from __future__ import annotations
 
 import re
+import urllib.parse
 from pathlib import Path
-from typing import Optional
 
 import requests
 from PySide6.QtCore import QObject, QThread, Signal, Slot
@@ -28,7 +28,8 @@ class _DownloadWorker(QObject):
     finished = Signal(str, Path)      # monster_id, local_path
     failed = Signal(str, str)         # monster_id, error_message
 
-    BASE_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-img/main/img"
+    MIRROR_BASE = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-img/main/img/bestiary/tokens"
+    OFFICIAL_BASE = "https://5e.tools/img/bestiary/tokens"
 
     def __init__(self, definition: MonsterDefinition, target_dir: Path):
         super().__init__()
@@ -39,22 +40,36 @@ class _DownloadWorker(QObject):
     def run(self):
         try:
             urls = self._build_candidate_urls()
-            local_path = self._determine_local_path()
+            name = self.definition.name
+            source = getattr(self.definition, "source", "") or ""
+            sanitized = self._sanitize_name(name)
 
             for url in urls:
                 try:
                     resp = requests.get(url, timeout=12)
                     if resp.status_code == 200 and len(resp.content) > 1000:
-                        local_path.parent.mkdir(parents=True, exist_ok=True)
+                        # Save using the actual extension from the URL that worked (webp or png)
+                        ext = Path(urllib.parse.urlparse(url).path).suffix.lower() or ".png"
+                        if ext not in (".png", ".webp", ".jpg", ".jpeg"):
+                            ext = ".png"
+                        target = self.target_dir
+                        if source:
+                            target = target / source
+                        target.mkdir(parents=True, exist_ok=True)
+                        local_path = target / f"{sanitized}{ext}"
                         local_path.write_bytes(resp.content)
+                        print(f"[MonsterImage] SUCCESS downloaded {len(resp.content)} bytes for {name} from {url} -> {local_path}")
                         self.finished.emit(self.definition.id, local_path)
                         return
                 except requests.RequestException:
                     continue
 
-            self.failed.emit(self.definition.id, "Could not find a matching token on the mirror.")
+            err = "Could not download any matching token (tried 5e.tools + mirror, underscore + %20 names)."
+            print(f"[MonsterImage] FAILED for {name}: {err}")
+            self.failed.emit(self.definition.id, err)
 
         except Exception as e:
+            print(f"[MonsterImage] EXCEPTION for {self.definition.name}: {e}")
             self.failed.emit(self.definition.id, str(e))
 
     def _sanitize_name(self, name: str) -> str:
@@ -64,29 +79,40 @@ class _DownloadWorker(QObject):
         return name
 
     def _build_candidate_urls(self) -> list[str]:
-        """Return likely raw GitHub URLs for this monster."""
+        """Build a list of likely token URLs, trying both the GitHub mirror
+        and the official 5e.tools site (with both underscore and %20 names)."""
+        import urllib.parse
+
         urls: list[str] = []
         name = self.definition.name
         source = getattr(self.definition, "source", "") or ""
-        sanitized = self._sanitize_name(name)
+        sanitized = self._sanitize_name(name)                    # Ancient_Red_Dragon
+        encoded = urllib.parse.quote(name)                       # Ancient%20Red%20Dragon
 
-        # Primary pattern used by 5eTools
+        # GitHub mirror (prefers underscore)
         if source:
-            urls.append(f"{self.BASE_URL}/bestiary/tokens/{source}/{sanitized}.webp")
-            urls.append(f"{self.BASE_URL}/bestiary/tokens/{source}/{sanitized}.png")
+            urls.append(f"{self.MIRROR_BASE}/{source}/{sanitized}.webp")
+            urls.append(f"{self.MIRROR_BASE}/{source}/{sanitized}.png")
+        urls.append(f"{self.MIRROR_BASE}/{sanitized}.webp")
+        urls.append(f"{self.MIRROR_BASE}/{sanitized}.png")
 
-        # Fallback without source folder
-        urls.append(f"{self.BASE_URL}/bestiary/tokens/{sanitized}.webp")
-        urls.append(f"{self.BASE_URL}/bestiary/tokens/{sanitized}.png")
+        # Official 5e.tools site - try both naming styles
+        name_variants = [sanitized, encoded]
+        for variant in name_variants:
+            if source:
+                urls.append(f"{self.OFFICIAL_BASE}/{source}/{variant}.webp")
+                urls.append(f"{self.OFFICIAL_BASE}/{source}/{variant}.png")
+            urls.append(f"{self.OFFICIAL_BASE}/{variant}.webp")
+            urls.append(f"{self.OFFICIAL_BASE}/{variant}.png")
 
-        # Also try the image_path we stored during import if it looks like a relative path
+        # Also try the stored image_path from import
         stored = getattr(self.definition, "image_path", None)
         if stored:
-            # Convert our stored relative path into a possible raw URL
-            clean = stored.replace("bestiary/tokens/", "").lstrip("/")
-            urls.append(f"{self.BASE_URL}/bestiary/tokens/{clean}")
+            filename = Path(stored.replace("bestiary/tokens/", "")).name
+            urls.append(f"{self.MIRROR_BASE}/{filename}")
+            urls.append(f"{self.OFFICIAL_BASE}/{filename}")
 
-        # Deduplicate while preserving order
+        # Deduplicate
         seen = set()
         unique_urls = []
         for u in urls:
@@ -121,12 +147,73 @@ class MonsterImageManager(QObject):
     image_ready = Signal(str, Path)   # monster_id, path to local image
     image_failed = Signal(str, str)   # monster_id, error message
 
-    def __init__(self, images_root: Optional[Path] = None, parent: QObject | None = None):
+    def __init__(self, images_root: Path | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self.images_root = images_root or (Path.cwd() / "data" / "images" / "bestiary" / "tokens")
-        self._active_threads: dict[str, QThread] = {}   # monster_id -> thread
+        if images_root is not None:
+            self.images_root = images_root
+        else:
+            self.images_root = self._discover_images_root()
+        self._active_threads: dict[str, QThread] = {}     # monster_id -> QThread
+        self._active_workers: dict[str, _DownloadWorker] = {}  # keep strong ref so Python GC doesn't kill the worker before it finishes
+        print(f"[MonsterImageManager] Using images root: {self.images_root}")
 
-    def get_local_image(self, definition: MonsterDefinition) -> Optional[Path]:
+    @staticmethod
+    def _discover_images_root() -> Path:
+        """Find a writable data/images/bestiary/tokens directory using the same
+        multi-candidate strategy that SrdMonsterRepository uses for monsters.json.
+        This guarantees that when the test utility writes a token, the running
+        app will see it even if launched via different cwd / entry points.
+        """
+        candidates: list[Path] = []
+
+        # 1. Relative to this source file (best when running from a git checkout)
+        try:
+            here = Path(__file__).resolve()
+            for up in range(6):
+                root = here.parents[up]
+                cand = root / "data" / "images" / "bestiary" / "tokens"
+                candidates.append(cand)
+                candidates.append(root / "src" / "data" / "images" / "bestiary" / "tokens")
+        except Exception:
+            pass
+
+        # 2. Current working directory and a few parents (covers uv run, python -m, etc.)
+        try:
+            cwd = Path.cwd().resolve()
+            candidates.append(cwd / "data" / "images" / "bestiary" / "tokens")
+            candidates.append(cwd.parent / "data" / "images" / "bestiary" / "tokens")
+            candidates.append(cwd.parent.parent / "data" / "images" / "bestiary" / "tokens")
+        except Exception:
+            pass
+
+        # 3. If we can locate the SRD monsters.json, put the images next to it
+        try:
+            srd_candidates = [
+                Path.cwd() / "data" / "srd" / "monsters.json",
+                Path(__file__).resolve().parents[4] / "data" / "srd" / "monsters.json",
+            ]
+            for srd in srd_candidates:
+                if srd.exists():
+                    images = srd.parent.parent / "images" / "bestiary" / "tokens"
+                    candidates.append(images)
+                    break
+        except Exception:
+            pass
+
+        # Pick the first one that already exists and looks plausible
+        for cand in candidates:
+            if cand.exists():
+                if (cand / "MM").exists() or cand.parent.exists() or any(cand.glob("**/*.webp")) or any(cand.glob("**/*.png")):
+                    return cand
+                if cand.is_dir():
+                    return cand
+
+        # Nothing existed — return the most likely place so first download lands
+        # in the exact same directory the utility would have used.
+        best = candidates[0] if candidates else (Path.cwd() / "data" / "images" / "bestiary" / "tokens")
+        return best
+
+    def get_local_image(self, definition: MonsterDefinition) -> Path | None:
         """Synchronous check for a locally cached image."""
         candidates = self._build_local_candidates(definition)
         for path in candidates:
@@ -160,6 +247,7 @@ class MonsterImageManager(QObject):
             return
 
         # 4. Start background download
+        print(f"[MonsterImageManager] Starting background download for {getattr(definition, 'name', definition.id)} (has_token=True, not local yet)")
         self._start_download(definition)
 
     def _start_download(self, definition: MonsterDefinition):
@@ -173,22 +261,31 @@ class MonsterImageManager(QObject):
         worker.failed.connect(self._on_download_failed)
         worker.finished.connect(thread.quit)
         worker.failed.connect(thread.quit)
+
+        # Safe cleanup: only drop the QThread after it has truly stopped.
+        # This prevents "QThread destroyed while still running" crashes.
+        thread.finished.connect(lambda tid=definition.id: self._cleanup_finished_thread(tid))
         thread.finished.connect(thread.deleteLater)
 
         self._active_threads[definition.id] = thread
+        self._active_workers[definition.id] = worker   # prevent Python GC from killing the worker too early
         thread.start()
 
     @Slot(str, Path)
     def _on_download_finished(self, monster_id: str, path: Path):
-        if monster_id in self._active_threads:
-            del self._active_threads[monster_id]
+        # Keep the thread reference until the thread actually stops (see _cleanup_finished_thread)
+        self._active_workers.pop(monster_id, None)
         self.image_ready.emit(monster_id, path)
 
     @Slot(str, str)
     def _on_download_failed(self, monster_id: str, error: str):
-        if monster_id in self._active_threads:
-            del self._active_threads[monster_id]
+        self._active_workers.pop(monster_id, None)
         self.image_failed.emit(monster_id, error)
+
+    def _cleanup_finished_thread(self, monster_id: str):
+        """Called from thread.finished signal — safe moment to drop the QThread."""
+        self._active_threads.pop(monster_id, None)
+        # The worker was already removed when it emitted finished/failed
 
     def _build_local_candidates(self, definition: MonsterDefinition) -> list[Path]:
         """Return possible local file paths for this monster."""

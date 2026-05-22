@@ -143,6 +143,9 @@ Thumbs.db
 data/5etools-src/
 data/5etools-img/
 
+# On-demand downloaded monster tokens (large binary images, generated at runtime)
+data/images/
+
 # Keep the generated rich bestiary (valuable for users)
 !data/srd/
 !data/srd/monsters.json

@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Signal, Slot
-from PySide6.QtWidgets import (
-    QScrollArea,
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QHBoxLayout,
-    QLineEdit,
-)
-from PySide6.QtGui import QPixmap
-from PySide6.QtCore import Qt
 from pathlib import Path
+
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from dnd_encounter.utils.monster_image_manager import MonsterImageManager
 
@@ -20,7 +20,7 @@ from dnd_encounter.utils.monster_image_manager import MonsterImageManager
 try:
     from dnd_encounter.application.dto.encounter_dto import EncounterStateDTO, EntityRowDTO
 except ImportError:
-    from .initiative_list_model import EncounterStateDTO, EntityRowDTO  # type: ignore fallback
+    from .initiative_list_model import EncounterStateDTO  # type: ignore fallback
 
 
 class StatBlockPanel(QScrollArea):
@@ -33,17 +33,18 @@ class StatBlockPanel(QScrollArea):
     hp_adjusted = Signal(str, int)  # (instance_id, delta)
     hp_set = Signal(str, int)       # (instance_id, absolute_new_hp) for direct set
 
-    def __init__(self, parent: QWidget | None = None, monster_repo=None) -> None:
+    def __init__(self, parent: QWidget | None = None, monster_repo=None, images_root: Path | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("StatBlockPanel")
         self.setWidgetResizable(True)
         self._monster_repo = monster_repo   # optional – used for rich monster details
 
         # On-demand monster token downloader (polished background fetching + caching)
-        self._image_manager = MonsterImageManager()
+        self._image_manager = MonsterImageManager(images_root=images_root)
         self._image_manager.image_ready.connect(self._on_image_ready)
         self._image_manager.image_failed.connect(self._on_image_failed)
         self._current_monster_id_for_image: str | None = None
+        self._current_definition_for_image = None   # last MonsterDefinition we tried to show an image for
 
         self._container = QWidget()
         self.setWidget(self._container)
@@ -310,6 +311,7 @@ class StatBlockPanel(QScrollArea):
         - Shows "Downloading token..." + triggers background download if the monster has official art
         """
         self._current_monster_id_for_image = getattr(definition, "id", None)
+        self._current_definition_for_image = definition
 
         local_path = self._image_manager.get_local_image(definition)
         if local_path:
@@ -318,7 +320,7 @@ class StatBlockPanel(QScrollArea):
 
         if getattr(definition, "has_token", False):
             self._image_label.setText("Downloading\n token...")
-            self._image_label.setToolTip("Fetching from 5eTools image mirror in the background...")
+            self._image_label.setToolTip("Fetching token from 5e.tools (official) in background. This takes 1-3s on first view.")
             self._image_manager.request_image(definition)
         else:
             self._clear_image()
@@ -328,23 +330,84 @@ class StatBlockPanel(QScrollArea):
         self._image_label.setText("no token")
         self._image_label.setToolTip("")
         self._current_monster_id_for_image = None
+        self._current_definition_for_image = None
 
     def _display_image(self, path: Path) -> None:
+        """Load and display the token image, with robust fallback for webp/png and plugin edge cases."""
+        self._image_label.setText("")  # ensure we are in pixmap mode, not text mode
         pix = QPixmap(str(path))
+        if pix.isNull():
+            # More explicit loader with auto-detect (helps when extension != actual format or partial plugin support)
+            try:
+                from PySide6.QtGui import QImageReader
+                reader = QImageReader(str(path))
+                reader.setAutoDetectImageFormat(True)
+                image = reader.read()
+                if not image.isNull():
+                    pix = QPixmap.fromImage(image)
+            except Exception:
+                pass
         if not pix.isNull():
             scaled = pix.scaled(140, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             self._image_label.setPixmap(scaled)
             self._image_label.setToolTip(str(path))
+            self._image_label.update()
+            self.update()  # ensure the scroll area / parent also repaints
+        else:
+            self._image_label.setText("Image\nerror")
+            self._image_label.setToolTip(f"Could not load token image at {path} (webp support?)")
 
     @Slot(str, Path)
     def _on_image_ready(self, monster_id: str, path: Path):
-        """Called when a background download finishes successfully."""
+        """Called when a background download finishes successfully (for any monster).
+
+        If this is the monster we are currently viewing, display it.
+        Otherwise, opportunistically check whether the monster we *are* currently
+        viewing now has a local file (it may have been the one that just landed).
+        This makes "add several monsters at once" work reliably.
+        """
         if monster_id == self._current_monster_id_for_image:
             self._display_image(path)
+            return
+
+        # Any download finishing is an opportunity to see if the currently
+        # selected monster's token has become available.
+        if self._current_definition_for_image is not None:
+            local = self._image_manager.get_local_image(self._current_definition_for_image)
+            if local:
+                self._display_image(local)
 
     @Slot(str, str)
     def _on_image_failed(self, monster_id: str, error: str):
         """Called when background download fails."""
         if monster_id == self._current_monster_id_for_image:
+            self._image_label.clear()
             self._image_label.setText("Download\nfailed")
             self._image_label.setToolTip(f"Could not download token: {error}")
+
+    # ------------------------------------------------------------------
+    # Proactive preloading for the whole encounter (so every added monster
+    # starts downloading its token even if it is not currently selected)
+    # ------------------------------------------------------------------
+
+    def preload_images_for_state(self, state) -> None:
+        """Kick off background token downloads for every monster currently
+        in the encounter that has has_token=True. This makes 'add a bunch of
+        monsters then browse them' work without having to click each one first.
+        """
+        if not self._monster_repo or not state:
+            return
+        entities = getattr(state, "entities", []) or []
+        for e in entities:
+            if getattr(e, "entity_type", None) != "monster":
+                continue
+            mid = getattr(e, "monster_id", None)
+            if not mid:
+                continue
+            try:
+                definition = self._monster_repo.get(mid)
+                if definition and getattr(definition, "has_token", False):
+                    # request_image is idempotent (checks local + active threads)
+                    self._image_manager.request_image(definition)
+            except Exception:
+                pass  # never let preloading break the UI

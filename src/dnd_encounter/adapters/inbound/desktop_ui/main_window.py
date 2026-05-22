@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pathlib import Path
 
 from .add_monster_dialog import AddMonsterDialog
 from .add_player_dialog import AddPlayerDialog
@@ -61,9 +62,23 @@ class MainWindow(QMainWindow):
 
         # Right side: Stat block + Condition button
         right_layout = QVBoxLayout()
-        # Pass the monster repo so the StatBlock can show rich definition data
+        # Pass the monster repo so the StatBlock can show rich definition data + a stable images root
         monster_repo = getattr(self._service, "monster_repo", None)
-        self.stat_panel = StatBlockPanel(monster_repo=monster_repo)
+        # Compute a stable images root from the same project_root logic used in run_ui.py
+        # so that tokens written by the utility are immediately visible to the app.
+        images_root: Path | None = None
+        try:
+            # When MainWindow is created from run_ui.py we can often walk up from __file__
+            mw_file = Path(__file__).resolve()
+            for up in range(5):
+                root = mw_file.parents[up]
+                cand = root / "data" / "images" / "bestiary" / "tokens"
+                if cand.exists() or (root / "data" / "srd" / "monsters.json").exists():
+                    images_root = cand
+                    break
+        except Exception:
+            pass
+        self.stat_panel = StatBlockPanel(monster_repo=monster_repo, images_root=images_root)
         right_layout.addWidget(self.stat_panel)
 
         self.btn_conditions = QPushButton("Conditions")
@@ -124,6 +139,10 @@ class MainWindow(QMainWindow):
         self.sidebar.refresh(state)
         if self._current_instance_id:
             self.stat_panel.refresh(state, self._current_instance_id)
+        # Proactively start downloading tokens for every monster in the encounter
+        # (even the ones not currently selected in the right panel). This is what
+        # makes "add 10 monsters, then click around" show images reliably.
+        self.stat_panel.preload_images_for_state(state)
         self._update_conditions_button()
         if hasattr(self, 'undo_action'):
             self.undo_action.setEnabled(self._service.can_undo())

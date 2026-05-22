@@ -157,7 +157,8 @@ def test_get_state_populates_current_turn_and_active():
 
         state = service.get_state()
 
-        assert len(state.entities) == 3
+        # Only active entities should be returned (inactive ones are filtered for the UI)
+        assert len(state.entities) == 2
         assert state.encounter_id == "test"
         assert state.round_number == 1
         assert state.undo_available is False
@@ -166,10 +167,8 @@ def test_get_state_populates_current_turn_and_active():
         assert state.entities[0].is_current_turn is False
         assert state.entities[0].is_active is True
 
-        # e1 (Monster1): current turn (active list index 1), active
+        # e1 (Monster1): current turn among active entities, active
         assert state.entities[1].is_current_turn is True
         assert state.entities[1].is_active is True
 
-        # e2 (DeadMonster): not current, inactive
-        assert state.entities[2].is_current_turn is False
-        assert state.entities[2].is_active is False
+        # Note: e2 (DeadMonster) is inactive and correctly filtered out of the state sent to UI
