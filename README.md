@@ -14,7 +14,8 @@ This is a collaborative experiment between Shiely and Grok to build the app exac
 - ✅ Full 5e SRD + supplements bestiary integrated (~4439 monsters from 5eTools mirror)
   - Rich data: ability scores, saving throws, skills, resistances, traits, legendary actions, spellcasting, senses, languages
   - SrdMonsterRepository + CompositeMonsterRepository (SRD base + user overrides)
-  - StatBlockPanel now displays full monster details + image/token support foundation
+  - StatBlockPanel displays full rich monster details **+ official tokens that download on-demand**
+- ✅ Monster token images are now robust and visible (background downloader + preloading + thread-safe)
 - ✅ Ruff: Clean
 - ✅ mypy: Passing on new code (relaxed globally for now)
 - ✅ Self-healing discipline maintained throughout
@@ -27,9 +28,9 @@ Following strict TDD: Keyboard shortcuts first, then context menus, richer StatB
 ## Recent Major Features
 
 - **Custom Monster Creator** — Create and save your own monsters directly from the Add Monster dialog. All `MonsterDefinition` fields are supported (only Name + HP are required).
-- **Rich StatBlockPanel** — Displays full monster data including ability scores, saving throws, skills, resistances, traits, actions, legendary actions, spellcasting, etc.
+- **Rich StatBlockPanel** — Displays full monster data including ability scores, saving throws, skills, resistances, traits, actions, legendary actions, spellcasting, etc. **Plus official-style monster tokens/images**.
+- **Monster Token Images (on-demand)** — The app now automatically downloads high-quality tokens from the official 5e.tools site (with underscore + %20 name variants + mirror fallback) the first time you view or add a monster. Robust background downloading with local caching, preloading for the entire encounter, and reliable display even when adding many creatures at once.
 - **Improved Remove Button** — Entities are now correctly removed from the initiative list (soft-delete with full Undo support).
-- **On-demand Token Downloading** — Monster images can be fetched automatically from the 5eTools mirror the first time you view a monster (with local caching).
 - **Full 5e Bestiary** — ~4400 monsters with rich data loaded from 5eTools.
 
 ## Getting Started on Windows (After `git clone`)
@@ -69,27 +70,39 @@ uv run python run_ui.py
 
 ## Monster Images & Tokens
 
-The right-hand StatBlockPanel can display official-style monster tokens/portraits.
+The right-hand **StatBlockPanel** automatically shows official-style monster tokens (140×140) for creatures that have them.
 
-### How it works
+### How it works (now very reliable)
 
-- The app looks for images in these locations (in order):
-  - `data/images/bestiary/tokens/<SOURCE>/<Name>.webp` (or .png)
-  - `data/images/bestiary/tokens/<Name>.webp`
-  - `data/5etools-img/img/bestiary/tokens/<SOURCE>/<Name>.webp` (if you clone the image mirror)
+- When you add a monster (or it appears in the encounter), the app checks for a local token.
+- If none exists and the monster has `has_token=True` in the bestiary, it starts a **background download** from the official `https://5e.tools/img/...` site (tries both `Ancient_Red_Dragon` and `Ancient%20Red%20Dragon` naming + mirror fallback).
+- Images are saved to:
+  ```
+  data/images/bestiary/tokens/<SOURCE>/<SanitizedName>.webp   (or .png)
+  ```
+  Example: `data/images/bestiary/tokens/MM/Ancient_Red_Dragon.webp`
+- The panel updates **live** as soon as the download finishes (even if you switched selection in the meantime).
+- All monsters in the current encounter are preloaded automatically.
 
-- Filenames should follow 5eTools conventions (spaces → `_`, special characters removed).
+### Using the diagnostic tool
 
-### Recommended setup
-
-Run the setup script after installing the project:
+If images aren't appearing for a particular monster, use the standalone tester:
 
 ```bash
-uv run python utilities/setup_monster_images.py
+uv run python utilities/test_monster_images.py --name "Ancient Red Dragon" --verbose
+# or
+uv run python utilities/test_monster_images.py --name "Goblin" -v
 ```
 
-This creates the expected folder structure and generates guidance.
+This uses the exact same logic as the app and tells you exactly which URL succeeded (or failed).
 
-**Note**: The full image collection is very large. Most users add tokens on-demand for the monsters they actually use (Option A).
+### First-time experience
+
+- The first time you view a new monster, you will briefly see **"Downloading token..."**.
+- After 1–4 seconds (depending on your connection) the real token appears.
+- Subsequent views are instant (cached locally).
+- The app will never download the same monster twice.
+
+**Note**: We deliberately do **not** ship the full token collection (hundreds of MB). Tokens are fetched on-demand only for the monsters you actually use. This keeps the repo small and fast to clone.
 
 Built with Grok — May 2026
