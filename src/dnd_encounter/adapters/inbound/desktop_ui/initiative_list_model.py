@@ -28,6 +28,7 @@ except ImportError:  # fallback for isolated testing
         conditions: list[str] = None  # type: ignore[assignment]
         is_current_turn: bool = False
         is_active: bool = True
+        monster_id: str | None = None
 
     @dataclass
     class EncounterStateDTO:  # type: ignore[no-redef]

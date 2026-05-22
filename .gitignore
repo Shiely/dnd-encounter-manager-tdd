@@ -138,3 +138,11 @@ cython_debug/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Large external 5eTools clones (do not commit the full source repos)
+data/5etools-src/
+data/5etools-img/
+
+# Keep the generated rich bestiary (valuable for users)
+!data/srd/
+!data/srd/monsters.json

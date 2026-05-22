@@ -14,6 +14,7 @@ Optional: You can also run it with offscreen mode for quick checks:
 
 from PySide6.QtWidgets import QApplication
 import sys
+from pathlib import Path
 
 from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
 from dnd_encounter.application.services.encounter_service import EncounterService
@@ -29,8 +30,21 @@ from dnd_encounter.bootstrap import seed_default_monsters
 def main() -> None:
     app = QApplication(sys.argv)
 
-    # Real repositories (data persists in user data dir)
-    monster_repo = JsonMonsterRepository()
+    from dnd_encounter.adapters.outbound.srd_monster_repository import SrdMonsterRepository
+    from dnd_encounter.adapters.outbound.composite_monster_repository import CompositeMonsterRepository
+
+    # Layer the big 5e SRD bestiary (read-only) under the user-writable custom monster DB.
+    # Resolve relative to this file so it works reliably no matter how the script is invoked
+    # (uv run, python -m, from different working directories, etc.).
+    project_root = Path(__file__).resolve().parent
+    srd_path = project_root / "data" / "srd" / "monsters.json"
+
+    srd_repo = SrdMonsterRepository(path=srd_path)
+    user_repo = JsonMonsterRepository()
+    monster_repo = CompositeMonsterRepository([srd_repo, user_repo])
+    print(f"[MonsterRepo] Composite ready -> {srd_repo.count()} SRD monsters + {user_repo.count()} user monsters "
+          f"= {monster_repo.count()} total (user overrides win on duplicate ids).")
+
     encounter_repo = JsonEncounterRepository()
 
     # Undo stack (5 levels, matching the architecture spec)
@@ -39,8 +53,8 @@ def main() -> None:
     dice_roller = DiceRoller()
     publisher = EventPublisher()
 
-    # Ensure we have some monsters available
-    seed_default_monsters(monster_repo)
+    # No longer needed — the SRD repo brings thousands of monsters.
+    # seed_default_monsters(monster_repo)  # kept commented for reference
 
     # Fresh encounter for this run
     encounter = Encounter(encounter_id="default")

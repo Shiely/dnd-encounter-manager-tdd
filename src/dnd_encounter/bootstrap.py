@@ -101,12 +101,20 @@ class SimpleUndoStack:
 def bootstrap() -> None:
     app = QApplication(sys.argv)
 
-    monster_repo = JsonMonsterRepository()
+    from dnd_encounter.adapters.outbound.srd_monster_repository import SrdMonsterRepository
+    from dnd_encounter.adapters.outbound.composite_monster_repository import CompositeMonsterRepository
+
+    srd_repo = SrdMonsterRepository()
+    user_repo = JsonMonsterRepository()
+    monster_repo = CompositeMonsterRepository([srd_repo, user_repo])
+    print("[WARNING] You are running the legacy bootstrap (old UI). "
+          "Please use `uv run python run_ui.py` to launch the new UI with the full 5e bestiary.")
+
     encounter_repo = JsonEncounterRepository()
     undo_stack = SimpleUndoStack()
 
-    # Seed default monsters
-    seed_default_monsters(monster_repo)
+    # No longer strictly needed; the SRD repo provides the full bestiary.
+    # seed_default_monsters(monster_repo)
 
     class SimpleDiceRoller:
         def roll_d20(self) -> int:

@@ -61,7 +61,9 @@ class MainWindow(QMainWindow):
 
         # Right side: Stat block + Condition button
         right_layout = QVBoxLayout()
-        self.stat_panel = StatBlockPanel()
+        # Pass the monster repo so the StatBlock can show rich definition data
+        monster_repo = getattr(self._service, "monster_repo", None)
+        self.stat_panel = StatBlockPanel(monster_repo=monster_repo)
         right_layout.addWidget(self.stat_panel)
 
         self.btn_conditions = QPushButton("Conditions")

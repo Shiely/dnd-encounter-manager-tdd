@@ -13,6 +13,7 @@ class EntityRowDTO:
     conditions: list[str]  # condition names as strings
     is_current_turn: bool
     is_active: bool
+    monster_id: str | None = None   # populated for monsters so StatBlock can fetch rich definition
 
 
 @dataclass

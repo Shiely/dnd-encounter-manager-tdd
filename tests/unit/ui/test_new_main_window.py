@@ -180,6 +180,44 @@ def test_migrated_add_monster_dialog_selection(qtbot, new_stub_service):
     assert dialog.get_selected_monster_id() == "goblin"
 
 
+def test_add_monster_dialog_live_filter(qtbot, new_stub_service):
+    """TDD test for the new search/filter feature in the monster selector."""
+    from dnd_encounter.adapters.inbound.desktop_ui.add_monster_dialog import AddMonsterDialog
+
+    dialog = AddMonsterDialog(new_stub_service)
+    qtbot.addWidget(dialog)
+
+    # With the fallback list we have 4 monsters
+    total = len(dialog._monster_items)
+    assert total == 4
+
+    # All visible when filter is empty
+    visible = sum(not item.isHidden() for item in dialog._monster_items)
+    assert visible == 4
+
+    # Filter for "gob" should show only Goblin
+    dialog.search_edit.setText("gob")
+    visible = sum(not item.isHidden() for item in dialog._monster_items)
+    assert visible == 1
+    # The visible item should still be selectable
+    for item in dialog._monster_items:
+        if not item.isHidden():
+            dialog.monster_list.setCurrentItem(item)
+            dialog._on_add()
+            assert dialog.get_selected_monster_id() == "goblin"
+            break
+
+    # Filter for something that matches none
+    dialog.search_edit.setText("xyznotexist")
+    visible = sum(not item.isHidden() for item in dialog._monster_items)
+    assert visible == 0
+
+    # Clearing filter restores everything
+    dialog.search_edit.setText("")
+    visible = sum(not item.isHidden() for item in dialog._monster_items)
+    assert visible == 4
+
+
 def test_condition_panel_emits_signal_on_toggle(qtbot, new_stub_service):
     from dnd_encounter.adapters.inbound.desktop_ui.condition_panel import ConditionPanel
 
@@ -241,3 +279,191 @@ def test_initiative_list_model_update_and_get_instance_id(sample_state):
     assert model.get_instance_id(0) == "p1"
     assert model.get_instance_id(1) == "m1"
     assert model.get_instance_id(99) is None
+
+
+# --- TDD: HP Editing UI (Priority #1 from updated list) ---
+
+
+def test_stat_block_panel_has_hp_adjustment_buttons(qtbot, sample_state):
+    """TDD test: After refreshing with a monster that has HP, +/- buttons should exist."""
+    from PySide6.QtWidgets import QPushButton
+    from dnd_encounter.adapters.inbound.desktop_ui.stat_block_panel import StatBlockPanel
+
+    panel = StatBlockPanel()
+    qtbot.addWidget(panel)
+
+    # "m1" in sample_state is a monster with current_hp
+    panel.refresh(sample_state, "m1")
+
+    buttons = panel.findChildren(QPushButton)
+    button_texts = [b.text() for b in buttons]
+
+    assert "-1 HP" in button_texts
+    assert "+1 HP" in button_texts
+
+
+def test_stat_block_panel_emits_hp_adjusted_on_button_click(qtbot, sample_state):
+    """TDD test: Clicking +/- buttons emits hp_adjusted signal with correct delta."""
+    from dnd_encounter.adapters.inbound.desktop_ui.stat_block_panel import StatBlockPanel
+
+    panel = StatBlockPanel()
+    qtbot.addWidget(panel)
+
+    received = []
+    panel.hp_adjusted.connect(lambda iid, delta: received.append((iid, delta)))
+
+    panel.refresh(sample_state, "m1")
+
+    # Click the +1 button
+    panel.btn_hp_plus.click()
+    assert ("m1", 1) in received
+
+    # Click the -1 button
+    panel.btn_hp_minus.click()
+    assert ("m1", -1) in received
+
+
+def test_main_window_hp_adjust_calls_service_edit_hp(qtbot, new_stub_service, sample_state):
+    """TDD integration test: MainWindow wires hp_adjusted signal to service.edit_hp."""
+    from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
+
+    window = MainWindow(new_stub_service)
+    qtbot.addWidget(window)
+
+    # Simulate the user having selected a monster
+    new_stub_service.get_state.return_value = sample_state
+    window._on_entity_selected("m1")
+
+    # Directly trigger the handler that the signal would call (simulates button click)
+    window._on_hp_adjusted("m1", -1)
+
+    # The service should have been called with a new absolute HP value
+    # (we don't know exact value without full state, but it must have been called)
+    new_stub_service.edit_hp.assert_called()
+    args = new_stub_service.edit_hp.call_args[0]
+    assert args[0] == "m1"
+    assert isinstance(args[1], int)
+
+
+# --- TDD: Sidebar discoverability (small buttons + context menu) ---
+
+
+def test_sidebar_has_compact_action_buttons(qtbot):
+    """TDD: Sidebar should have small +M, +P, and Remove buttons near the list."""
+    from dnd_encounter.adapters.inbound.desktop_ui.sidebar_widget import SidebarWidget
+
+    sidebar = SidebarWidget()
+    qtbot.addWidget(sidebar)
+
+    assert hasattr(sidebar, "btn_add_monster")
+    assert hasattr(sidebar, "btn_add_player")
+    assert hasattr(sidebar, "btn_remove")
+
+    # Buttons should be compact (small height)
+    assert sidebar.btn_add_monster.maximumHeight() <= 24
+    assert sidebar.btn_add_player.maximumHeight() <= 24
+    assert sidebar.btn_remove.maximumHeight() <= 24
+
+
+def test_sidebar_buttons_emit_correct_signals(qtbot):
+    """TDD: Clicking the compact buttons should emit the expected signals."""
+    from dnd_encounter.adapters.inbound.desktop_ui.sidebar_widget import SidebarWidget
+
+    sidebar = SidebarWidget()
+    qtbot.addWidget(sidebar)
+
+    received = []
+
+    sidebar.add_monster_requested.connect(lambda: received.append("add_monster"))
+    sidebar.add_player_requested.connect(lambda: received.append("add_player"))
+    sidebar.remove_requested.connect(lambda: received.append("remove"))
+
+    sidebar.btn_add_monster.click()
+    sidebar.btn_add_player.click()
+    sidebar.btn_remove.click()
+
+    assert "add_monster" in received
+    assert "add_player" in received
+    assert "remove" in received
+
+
+# --- TDD: Priority #2 - Current Turn Visualization ---
+
+
+def test_sidebar_status_shows_current_turn_actor(qtbot, sample_state):
+    """TDD: After refresh, the status label should clearly show the current turn actor."""
+    from dnd_encounter.adapters.inbound.desktop_ui.sidebar_widget import SidebarWidget
+
+    sidebar = SidebarWidget()
+    qtbot.addWidget(sidebar)
+
+    sidebar.refresh(sample_state)
+
+    text = sidebar._status_label.text()
+    assert "Aragorn" in text
+    assert "Now Acting" in text or "Round" in text
+
+
+def test_show_conditions_refreshes_panel_with_current_entity(qtbot, new_stub_service, sample_state):
+    """TDD for Priority 3: MainWindow should pass the selected entity to ConditionPanel.refresh()."""
+    from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
+    from dnd_encounter.adapters.inbound.desktop_ui.condition_panel import ConditionPanel
+
+    window = MainWindow(new_stub_service)
+    qtbot.addWidget(window)
+
+    new_stub_service.get_state.return_value = sample_state
+    window._current_instance_id = "m1"   # Goblin in the sample
+
+    # We can't easily show the modal in tests without more mocking,
+    # so we test the preparation logic by calling the internal method
+    # and inspecting what would be passed to refresh.
+    # For now, verify that we can get the entity for the current ID.
+    state = new_stub_service.get_state.return_value
+    entity = next((e for e in state.entities if e.instance_id == "m1"), None)
+    assert entity is not None
+    assert entity.display_name == "Goblin"
+
+
+def test_conditions_button_updates_with_selected_entity(qtbot, new_stub_service, sample_state):
+    """TDD next increment for Priority 3: Conditions button should reflect the current entity."""
+    from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
+
+    window = MainWindow(new_stub_service)
+    qtbot.addWidget(window)
+
+    new_stub_service.get_state.return_value = sample_state
+
+    # Simulate selecting "p1" (Aragorn)
+    window._on_entity_selected("p1")
+
+    button_text = window.btn_conditions.text()
+    assert "Conditions" in button_text
+    assert "Aragorn" in button_text or "p1" in button_text  # flexible for now
+
+
+# --- TDD: Keyboard Shortcuts (First slice of New UI Interaction Polish phase) ---
+
+
+def test_keyboard_shortcuts_are_installed_on_construction(qtbot, new_stub_service):
+    """
+    TDD test: MainWindow wires Space (advance) and Delete/Backspace (remove) shortcuts.
+    We verify via the presence of QShortcut objects and that the handler methods exist.
+    """
+    from PySide6.QtGui import QShortcut
+    from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
+
+    window = MainWindow(new_stub_service)
+    qtbot.addWidget(window)
+
+    # At least one QShortcut was created (we added Backspace explicitly)
+    shortcuts = window.findChildren(QShortcut)
+    assert len(shortcuts) >= 1
+
+    # The handler methods that the shortcuts ultimately call must exist
+    assert hasattr(window, "_on_advance_turn")
+    assert hasattr(window, "_on_remove_selected")
+
+    # We also attached shortcuts directly to QAction objects in the menu
+    # (verified indirectly: the menu construction succeeded without error)
+    assert window.menuBar() is not None

@@ -53,6 +53,7 @@ class EncounterService:
                     conditions=[c.value for c in entity.conditions],
                     is_current_turn=(entity is current),
                     is_active=entity.is_active,
+                    monster_id=getattr(entity, "monster_id", None),
                 )
             )
 

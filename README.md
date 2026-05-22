@@ -11,6 +11,9 @@ This is a collaborative experiment between Shiely and Grok to build the app exac
   - New `MainWindow` + all widgets live in `adapters/inbound/desktop_ui/`
   - 18+ pytest-qt tests green for the new UI
   - Old `ui/` folder deprecated
+- ✅ Full 5e SRD bestiary integrated (~2836 monsters from 5eTools mirror via CompositeMonsterRepository)
+  - SrdMonsterRepository + robust conversion layer (handles importer edge cases)
+  - User monsters (JsonMonsterRepository) correctly override SRD on duplicate ids
 - ✅ Ruff: Clean
 - ✅ mypy: Passing on new code (relaxed globally for now)
 - ✅ Self-healing discipline maintained throughout
