@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from dnd_encounter import __version__
+
 from PySide6.QtGui import QShortcut
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QInputDialog
@@ -27,6 +29,7 @@ from .add_monster_dialog import AddMonsterDialog
 from .add_player_dialog import AddPlayerDialog
 from .condition_panel import ConditionPanel
 from .encounter_signals import EncounterSignals
+from .keyboard_shortcuts_dialog import KeyboardShortcutsDialog
 from .sidebar_widget import SidebarWidget
 from .stat_block_panel import StatBlockPanel
 
@@ -49,7 +52,7 @@ class MainWindow(QMainWindow):
         self._signals = signals or EncounterSignals()
         self._current_instance_id: str | None = None
 
-        self.setWindowTitle("D&D Encounter Manager")
+        self.setWindowTitle(f"D&D Encounter Manager v{__version__}")
         self.setGeometry(100, 100, 1100, 700)
 
         central = QWidget()
@@ -64,6 +67,7 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout()
         # Pass the monster repo so the StatBlock can show rich definition data + a stable images root
         monster_repo = getattr(self._service, "monster_repo", None)
+
         # Compute a stable images root from the same project_root logic used in run_ui.py
         # so that tokens written by the utility are immediately visible to the app.
         images_root: Path | None = None
@@ -79,7 +83,7 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self.stat_panel = StatBlockPanel(monster_repo=monster_repo, images_root=images_root)
-        right_layout.addWidget(self.stat_panel)
+        right_layout.addWidget(self.stat_panel, stretch=1)  # Give the stat block more vertical space
 
         self.btn_conditions = QPushButton("Conditions")
         self.btn_conditions.clicked.connect(self._show_conditions)
@@ -174,6 +178,16 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         self.undo_action = file_menu.addAction("Undo", self._on_undo)
         self.undo_action.setShortcut("Ctrl+Z")
+
+        # Help menu - primary place for discovering keyboard shortcuts
+        help_menu = menubar.addMenu("Help")
+        shortcuts_action = help_menu.addAction("Keyboard Shortcuts...")
+        shortcuts_action.setShortcut("F1")
+        shortcuts_action.triggered.connect(self._show_keyboard_shortcuts)
+
+    def _show_keyboard_shortcuts(self):
+        dialog = KeyboardShortcutsDialog(self)
+        dialog.exec()
 
     def _on_add_monster(self):
         dialog = AddMonsterDialog(self._service, self)

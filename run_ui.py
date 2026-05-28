@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from dnd_encounter.adapters.inbound.desktop_ui.main_window import MainWindow
+from dnd_encounter import __version__
 from dnd_encounter.application.services.encounter_service import EncounterService
 from dnd_encounter.adapters.outbound.json_monster_repository import JsonMonsterRepository
 from dnd_encounter.adapters.outbound.json_encounter_repository import JsonEncounterRepository
@@ -28,6 +29,7 @@ from dnd_encounter.bootstrap import seed_default_monsters
 
 
 def main() -> None:
+    print(f"[D&D Encounter Manager] Starting version {__version__}")
     app = QApplication(sys.argv)
 
     from dnd_encounter.adapters.outbound.srd_monster_repository import SrdMonsterRepository
