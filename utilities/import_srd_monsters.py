@@ -71,7 +71,9 @@ def convert_speed(speed: dict[str, Any]) -> dict[str, Any]:
 # ---------- 5eTools entry rendering & helper converters (NEW) ----------
 
 def _strip_5etools_tags(text: str) -> str:
-    """Roughly convert 5eTools {@tag|...} syntax into readable text."""
+    """Roughly convert 5eTools {@tag|...} syntax into readable text.
+    Improved to handle damage and dice expressions.
+    """
     import re
 
     if not isinstance(text, str):
@@ -79,6 +81,23 @@ def _strip_5etools_tags(text: str) -> str:
 
     def replace_tag(match: re.Match) -> str:
         content = match.group(0)
+
+        # Handle {@damage 8d8 force} or {@damage 8d8|force}
+        if '{@damage ' in content:
+            inner = content.replace('{@damage ', '').rstrip('}')
+            # Try to extract formula and type
+            parts = inner.split('|')
+            formula = parts[0].strip()
+            dmg_type = parts[1].strip() if len(parts) > 1 else ""
+            if dmg_type:
+                return f"{formula} {dmg_type}"
+            return formula
+
+        # Handle {@dice 8d8}
+        if '{@dice ' in content:
+            inner = content.replace('{@dice ', '').rstrip('}')
+            return inner.split('|')[0].strip()
+
         if '|' in content:
             inner = content.split('|')[-1].rstrip('}')
             return inner
@@ -86,6 +105,39 @@ def _strip_5etools_tags(text: str) -> str:
             return content.replace('{@dc ', 'DC ').rstrip('}')
         if '{@hit ' in content:
             return content.replace('{@hit ', '+').rstrip('}')
+
+        # Handle common tags like {@spell Foo Bar}, {@item Wand}, {@condition Blinded}, etc.
+        tag_match = re.match(r'\{@(\w+)\s+(.+?)\}$', content)
+        if tag_match:
+            tag = tag_match.group(1).lower()
+            rest = tag_match.group(2).strip()
+
+            # Special handling for attack type abbreviations used in 5eTools
+            if tag == "atk":
+                atk_map = {
+                    "mw": "Melee Weapon Attack",
+                    "rw": "Ranged Weapon Attack",
+                    "ms": "Melee Spell Attack",
+                    "rs": "Ranged Spell Attack",
+                    "ms,rs": "Melee or Ranged Spell Attack",
+                    "mw,rw": "Melee or Ranged Weapon Attack",
+                    "m": "Melee Attack",
+                    "r": "Ranged Attack",
+                }
+                return atk_map.get(rest.lower(), rest)
+
+            return rest
+
+        # Handle {@recharge 4}, {@recharge 4-6}, {@recharge 5|6}, etc.
+        if '{@recharge' in content:
+            m = re.search(r'\{@recharge\s*([^}]+)\}', content)
+            if m:
+                val = m.group(1).strip()
+                # Normalize "4-6" or "4|6" style
+                val = val.replace('|', '–').replace('-', '–')
+                return f"(Recharge {val})"
+
+        # Last resort: remove the tag entirely
         return re.sub(r'\{@[^}]+}', '', content)
 
     text = re.sub(r'\{@[^}]+}', replace_tag, text)
@@ -104,14 +156,38 @@ def render_entries(entries: Any) -> str:
         parts = [render_entries(e) for e in entries]
         return " ".join(p for p in parts if p).strip()
     if isinstance(entries, dict):
-        if "entries" in entries:
-            text = render_entries(entries["entries"])
-            name = entries.get("name")
-            return f"{name}. {text}".strip() if name else text
-        if "text" in entries:
-            return _strip_5etools_tags(str(entries["text"]))
-        if "entry" in entries:
-            return render_entries(entries["entry"])
+        # Handle structured damage objects
+        if entries.get("type") == "damage" and "damage" in entries:
+            damage_parts = []
+            for d in entries["damage"]:
+                avg = d.get("average")
+                formula = d.get("formula") or d.get("dice")
+                dmg_type = d.get("type", "")
+                if avg is not None and formula:
+                    damage_parts.append(f"{avg} ({formula})")
+                elif formula:
+                    damage_parts.append(f"({formula})")
+            return " ".join(damage_parts)
+
+        # Handle standalone dice objects
+        if entries.get("type") == "dice":
+            avg = entries.get("average")
+            formula = entries.get("formula") or entries.get("dice")
+            if avg is not None and formula:
+                return f"{avg} ({formula})"
+            if formula:
+                return f"({formula})"
+            return ""
+
+        # Recursively handle common wrapper structures
+        for key in ("entries", "text", "entry", "items"):
+            if key in entries:
+                text = render_entries(entries[key])
+                name = entries.get("name")
+                if name:
+                    return f"{name}. {text}".strip() if text else str(name)
+                return text
+
         return str(entries)
     return str(entries)
 
@@ -208,25 +284,81 @@ def convert_entry_list(raw_list: list[dict[str, Any]]) -> list[dict[str, str]]:
         name = item.get("name") or "Feature"
         desc = render_entries(item.get("entries") or item.get("entry") or item.get("text") or "")
         if desc:
-            result.append({"name": str(name), "description": desc[:1200]})
+            # High cap for info preservation; UI can scroll. Real descriptions rarely exceed 2000 chars.
+            result.append({"name": str(name), "description": desc[:8000]})
     return result
 
 
 def convert_spellcasting(raw: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Convert spellcasting using the unified shape also produced by convert_spellcasting_mpmm:
+    "spells": { "at_will": [...], "daily_2": [...], "level_3": {"spells": [...], "slots": N}, ... }
+    """
     out = []
     for sc in raw or []:
         if not isinstance(sc, dict):
             continue
         name = sc.get("name", "Spellcasting")
         header = render_entries(sc.get("headerEntries", []))
-        spells = []
-        for k, v in list(sc.items())[:6]:
-            if k in ("will", "daily", "atWill", "legendary") or k.startswith("spells"):
-                spells.append({k: render_entries(v)})
+
+        spells_by_freq: dict[str, Any] = {}
+
+        # Classic keys directly on the spellcasting object
+        for classic_key in ("will", "atWill", "at_will"):
+            if classic_key in sc and sc[classic_key]:
+                val = sc[classic_key]
+                lst = val if isinstance(val, list) else (val.get("spells") if isinstance(val, dict) else [])
+                spells_by_freq["at_will"] = [_strip_5etools_tags(s) for s in lst if s]
+
+        daily = sc.get("daily") or sc.get("Daily")
+        if isinstance(daily, dict):
+            for freq, spell_list in daily.items():
+                if not spell_list:
+                    continue
+                num = "".join(ch for ch in str(freq) if ch.isdigit())
+                key = f"daily_{num}" if num else f"daily_{freq}"
+                clean = [_strip_5etools_tags(s) for s in (spell_list if isinstance(spell_list, list) else [spell_list])]
+                spells_by_freq[key] = clean
+
+        leg = sc.get("legendary")
+        if isinstance(leg, list) and leg:
+            spells_by_freq["legendary"] = [_strip_5etools_tags(s) for s in leg]
+
+        # Modern "spells" dict with numeric levels
+        spells_data = sc.get("spells", {})
+        if isinstance(spells_data, dict):
+            for level_str, level_info in spells_data.items():
+                if not isinstance(level_info, dict):
+                    continue
+                try:
+                    level = int(level_str)
+                except (ValueError, TypeError):
+                    continue
+                spell_list = level_info.get("spells", []) or []
+                slots = level_info.get("slots")
+                clean = [_strip_5etools_tags(s) for s in spell_list if s]
+                if level == 0:
+                    spells_by_freq["at_will"] = clean
+                else:
+                    key = f"level_{level}"
+                    entry: dict[str, Any] = {"spells": clean}
+                    if slots is not None:
+                        entry["slots"] = slots
+                    spells_by_freq[key] = entry
+
+        # Fallback capture of any remaining spells* keys
+        if not spells_by_freq:
+            for k, v in list(sc.items())[:8]:
+                if str(k).lower().startswith("spells") and v:
+                    if isinstance(v, list):
+                        spells_by_freq["other"] = [_strip_5etools_tags(s) for s in v if s]
+                    break
+
         out.append({
             "name": name,
-            "header": header[:300] if header else "",
-            "spells": spells[:4],
+            "header": header,
+            "ability": sc.get("ability", "int"),
+            "spells": spells_by_freq,
         })
     return out
 
