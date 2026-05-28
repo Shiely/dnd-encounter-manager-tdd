@@ -11,7 +11,7 @@ This is a collaborative experiment between Shiely and Grok to build the app exac
   - New `MainWindow` + all widgets live in `adapters/inbound/desktop_ui/`
   - 18+ pytest-qt tests green for the new UI
   - Old `ui/` folder deprecated
-- ✅ Full 5e SRD + supplements bestiary integrated (~4439 monsters from 5eTools mirror)
+- ✅ Full 5e SRD + supplements bestiary integrated (~3723 monsters (high-quality version) from 5eTools mirror)
   - Rich data: ability scores, saving throws, skills, resistances, traits, legendary actions, spellcasting, senses, languages
   - SrdMonsterRepository + CompositeMonsterRepository (SRD base + user overrides)
   - StatBlockPanel displays full rich monster details **+ official tokens that download on-demand**
@@ -31,7 +31,7 @@ Following strict TDD: Keyboard shortcuts first, then context menus, richer StatB
 - **Rich StatBlockPanel** — Displays full monster data including ability scores, saving throws, skills, resistances, traits, actions, legendary actions, spellcasting, etc. **Plus official-style monster tokens/images**.
 - **Monster Token Images (on-demand)** — The app now automatically downloads high-quality tokens from the official 5e.tools site (with underscore + %20 name variants + mirror fallback) the first time you view or add a monster. Robust background downloading with local caching, preloading for the entire encounter, and reliable display even when adding many creatures at once.
 - **Improved Remove Button** — Entities are now correctly removed from the initiative list (soft-delete with full Undo support).
-- **Full 5e Bestiary** — ~4400 monsters with rich data loaded from 5eTools.
+- **Full 5e Bestiary** — ~3723 monsters (high-quality version) with rich data loaded from 5eTools.
 
 ## Getting Started on Windows (After `git clone`)
 
@@ -106,3 +106,8 @@ This uses the exact same logic as the app and tells you exactly which URL succee
 **Note**: We deliberately do **not** ship the full token collection (hundreds of MB). Tokens are fetched on-demand only for the monsters you actually use. This keeps the repo small and fast to clone.
 
 Built with Grok — May 2026
+## Documentation & Process
+
+- [Development Process](docs/Development_Process.md) — Important lessons about keeping the developer experience consistent with what users get when they clone the repo.
+- [Utilities & Data Regeneration](utilities/README.md)
+- [Contributing](CONTRIBUTING.md)
