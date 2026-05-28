@@ -60,6 +60,10 @@ class StubDiceRoller:
     def roll_d20(self) -> int:
         return self._value
 
+    def roll_expression(self, expression: str) -> int:
+        # For tests, return a predictable value based on the fixed_value
+        return self._value * 2 + 5   # e.g. 25 if fixed_value=10
+
 
 class StubEventPublisher:
     def __init__(self) -> None:

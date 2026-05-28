@@ -33,13 +33,19 @@ class AddEntityCommand:
         roll = self.dice_roller.roll_d20()
         initiative = roll + definition.ability_scores.dex_modifier
 
+        # Roll HP from the hit dice formula (like initiative) instead of using the average
+        if definition.hit_dice:
+            max_hp = self.dice_roller.roll_expression(definition.hit_dice)
+        else:
+            max_hp = definition.hit_points
+
         entity = EncounterEntity(
             instance_id=f"{self.monster_id}_{len(self.encounter.entities)}",
             display_name=f"{definition.name} #{len([e for e in self.encounter.entities if e.monster_id == self.monster_id]) + 1}",
             entity_type="monster",
             initiative=initiative,
-            current_hp=definition.hit_points,
-            max_hp=definition.hit_points,
+            current_hp=max_hp,
+            max_hp=max_hp,
             monster_id=self.monster_id,
         )
 
