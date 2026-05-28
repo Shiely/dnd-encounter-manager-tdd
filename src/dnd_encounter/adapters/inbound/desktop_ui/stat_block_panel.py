@@ -10,11 +10,15 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
+    QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
 
 from dnd_encounter.utils.monster_image_manager import MonsterImageManager
+from dnd_encounter.adapters.inbound.desktop_ui.monster_stat_block_renderer import MonsterStatBlockRenderer
+
+import re
 
 # Use canonical DTO from application layer (self-heal for consistency with Sidebar)
 try:
@@ -37,6 +41,9 @@ class StatBlockPanel(QScrollArea):
         super().__init__(parent)
         self.setObjectName("StatBlockPanel")
         self.setWidgetResizable(True)
+        # Allow the panel to expand vertically to use available space in the main window
+        from PySide6.QtWidgets import QSizePolicy
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self._monster_repo = monster_repo   # optional – used for rich monster details
 
         # On-demand monster token downloader (polished background fetching + caching)
@@ -72,10 +79,13 @@ class StatBlockPanel(QScrollArea):
 
         self._layout.addLayout(header_layout)
 
-        self._content = QLabel()
-        self._content.setWordWrap(True)
-        self._content.setStyleSheet("font-size: 13px; line-height: 1.35;")
+        # Use QTextBrowser instead of QLabel so users can highlight and copy
+        # text from the rich stat block (very useful for debugging data issues).
+        self._content = QTextBrowser()
         self._content.setOpenExternalLinks(False)
+        self._content.setStyleSheet("font-size: 13px; line-height: 1.35;")
+        # Allow the rich text area to expand and use available vertical space
+        self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._layout.addWidget(self._content)
 
         # HP Adjustment controls (Priority #1 - HP Editing UI)
@@ -100,7 +110,8 @@ class StatBlockPanel(QScrollArea):
         direct_hp_layout.addWidget(self.btn_set_hp)
         self._layout.addLayout(direct_hp_layout)
 
-        self._layout.addStretch()
+        # Removed final addStretch() so the panel can use more vertical space
+        # when the parent layout gives it extra room (reduces unnecessary scrolling).
 
         self._current_instance_id: str | None = None
 
@@ -108,9 +119,9 @@ class StatBlockPanel(QScrollArea):
     def refresh(self, state: EncounterStateDTO | None, instance_id: str | None = None) -> None:
         if state is None or instance_id is None:
             self._title.setText("No entity selected")
-            self._content.setText("")
+            self._content.setHtml("")
             self._current_instance_id = None
-            self._clear_image()
+            self._clear_token_image_only()
             return
 
         entity = None
@@ -121,7 +132,8 @@ class StatBlockPanel(QScrollArea):
 
         if entity is None:
             self._title.setText("Entity not found")
-            self._content.setText("")
+            self._content.setHtml("")
+            self._clear_token_image_only()
             return
 
         self._current_instance_id = instance_id
@@ -153,10 +165,13 @@ class StatBlockPanel(QScrollArea):
         else:
             lines.append("<b>Conditions:</b> None")
 
-        self._content.setText("<br>".join(lines))
+        basic_html = "<br>".join(lines)
+
+        # Always start with basic info. Enrichment will rebuild the full content.
+        self._set_full_content(basic_html)
 
         # --- Try to enrich with full monster definition (new rich data) ---
-        self._try_enrich_with_definition(entity)
+        self._try_enrich_with_definition(entity, basic_html)
 
     def _on_hp_minus(self) -> None:
         if self._current_instance_id:
@@ -179,129 +194,55 @@ class StatBlockPanel(QScrollArea):
     # Rich monster definition rendering (NEW)
     # ------------------------------------------------------------------
 
-    def _try_enrich_with_definition(self, entity) -> None:
-        """If we have a monster_repo and this is a monster, fetch the full definition and show rich data + image."""
+    def _try_enrich_with_definition(self, entity, basic_html: str = "") -> None:
+        """If we have a monster_repo and this is a monster, fetch the full definition and show rich data + image.
+
+        Uses safe one-shot HTML composition via _set_full_content().
+        Never wipes the main text content on failure paths.
+        """
         if not self._monster_repo or not entity:
-            self._clear_image()
+            self._clear_token_image_only()
             return
         if getattr(entity, "entity_type", "monster") != "monster":
-            self._clear_image()
+            self._clear_token_image_only()
             return
 
         monster_id = getattr(entity, "monster_id", None)
         if not monster_id:
-            self._clear_image()
+            self._clear_token_image_only()
             return
 
         try:
             definition = self._monster_repo.get(monster_id)
             if definition:
-                rich_html = self._build_rich_monster_html(definition)
-                current = self._content.text()
-                self._content.setText(current + "<hr>" + rich_html)
+                if not hasattr(self, "_renderer"):
+                    self._renderer = MonsterStatBlockRenderer()
 
-                # Load image if available
+                current_hp = getattr(entity, "current_hp", None)
+                max_hp = getattr(entity, "max_hp", None)
+
+                rich_html = self._renderer.render(
+                    definition,
+                    current_hp=current_hp,
+                    max_hp=max_hp,
+                )
+
+                if rich_html:
+                    self._set_full_content(basic_html, rich_html)
+                else:
+                    self._set_full_content(basic_html)
+
                 self._load_monster_image(definition)
             else:
-                self._clear_image()
+                self._clear_token_image_only()
         except Exception:
-            self._clear_image()
+            # On any error, ensure we at least keep the basic info
+            if basic_html:
+                self._set_full_content(basic_html)
+            self._clear_token_image_only()
 
-    def _build_rich_monster_html(self, m) -> str:
-        """Produce a nice HTML block for the full monster stat block."""
-        parts: list[str] = []
-
-        # Header line
-        cr = getattr(getattr(m, "challenge_rating", None), "value", "?")
-        parts.append(f"<b><i>CR {cr}</i></b>")
-
-        # Ability scores (compact)
-        ab = getattr(m, "ability_scores", None)
-        if ab:
-            scores = "  |  ".join([
-                f"STR {getattr(ab, 'str_', 10)}",
-                f"DEX {getattr(ab, 'dex', 10)}",
-                f"CON {getattr(ab, 'con', 10)}",
-                f"INT {getattr(ab, 'int_', 10)}",
-                f"WIS {getattr(ab, 'wis', 10)}",
-                f"CHA {getattr(ab, 'cha', 10)}",
-            ])
-            parts.append(f"<small>{scores}</small>")
-
-        # Saving Throws + Skills
-        saves = getattr(m, "saving_throws", {}) or {}
-        skills = getattr(m, "skills", {}) or {}
-        if saves or skills:
-            def fmt(d): return ", ".join(f"{k.upper()} +{v}" for k, v in d.items())
-            line = ""
-            if saves:
-                line += f"<b>Saves:</b> {fmt(saves)}"
-            if skills:
-                if line: line += "   "
-                line += f"<b>Skills:</b> {fmt(skills)}"
-            parts.append(line)
-
-        # Defenses
-        resists = getattr(m, "damage_resistances", []) or []
-        immunes = getattr(m, "damage_immunities", []) or []
-        vulns = getattr(m, "damage_vulnerabilities", []) or []
-        cond_immune = getattr(m, "condition_immunities", []) or []
-
-        def fmt_list(lst, label):
-            return f"<b>{label}:</b> {', '.join(lst)}" if lst else ""
-
-        def_lines = [
-            fmt_list(resists, "Resist"),
-            fmt_list(immunes, "Immune"),
-            fmt_list(vulns, "Vulnerable"),
-            fmt_list(cond_immune, "Condition Immune"),
-        ]
-        def_lines = [d for d in def_lines if d]
-        if def_lines:
-            parts.append(" | ".join(def_lines))
-
-        # Senses + Languages
-        senses = getattr(m, "senses", {}) or {}
-        langs = getattr(m, "languages", []) or []
-        sense_str = ", ".join(f"{k} {v}" for k, v in senses.items() if v and k != "passive_perception")
-        if senses.get("passive_perception"):
-            sense_str += f", passive Perception {senses['passive_perception']}"
-        if sense_str:
-            parts.append(f"<b>Senses:</b> {sense_str}")
-        if langs:
-            parts.append(f"<b>Languages:</b> {', '.join(langs)}")
-
-        # Traits / Features
-        traits = getattr(m, "traits", []) or []
-        if traits:
-            parts.append("<b>Traits</b>")
-            for t in traits[:6]:   # limit for UI space
-                parts.append(f"• <b>{t.get('name','')}</b> — {t.get('description','')[:180]}")
-
-        # Actions
-        actions = getattr(m, "actions", []) or []
-        if actions:
-            parts.append("<b>Actions</b>")
-            for a in actions[:5]:
-                parts.append(f"• <b>{a.get('name','')}</b> — {a.get('description','')[:160]}")
-
-        # Legendary Actions
-        leg = getattr(m, "legendary_actions", []) or []
-        if leg:
-            parts.append("<b>Legendary Actions</b>")
-            for l in leg[:4]:
-                parts.append(f"• <b>{l.get('name','')}</b> — {l.get('description','')[:140]}")
-
-        # Spellcasting (very abbreviated)
-        sc = getattr(m, "spellcasting", []) or []
-        if sc:
-            parts.append("<b>Spellcasting</b>")
-            for entry in sc[:2]:
-                header = entry.get("header", "")
-                if header:
-                    parts.append(f"• {header[:200]}")
-
-        return "<br>".join(parts)
+    # _build_rich_monster_html has been fully extracted to MonsterStatBlockRenderer.
+    # The old method body has been removed.
 
     def _load_monster_image(self, definition) -> None:
         """
@@ -323,14 +264,34 @@ class StatBlockPanel(QScrollArea):
             self._image_label.setToolTip("Fetching token from 5e.tools (official) in background. This takes 1-3s on first view.")
             self._image_manager.request_image(definition)
         else:
-            self._clear_image()
+            # Do not wipe text content here.
+            self._image_label.clear()
+            self._image_label.setText("no token")
+            self._image_label.setToolTip("")
 
-    def _clear_image(self) -> None:
+    def _clear_token_image_only(self) -> None:
+        """Only clear the token image area. Never wipe the main stat text content."""
         self._image_label.clear()
         self._image_label.setText("no token")
         self._image_label.setToolTip("")
         self._current_monster_id_for_image = None
         self._current_definition_for_image = None
+
+    def _set_full_content(self, basic_html: str, rich_html: str | None = None) -> None:
+        """Safely set the complete content of the stat block in one operation.
+
+        This is the preferred way to update the QTextBrowser to avoid
+        incremental HTML concatenation bugs and partial state issues.
+        """
+        if not basic_html:
+            basic_html = ""
+
+        if rich_html:
+            full_html = basic_html + "<hr>" + rich_html
+        else:
+            full_html = basic_html
+
+        self._content.setHtml(full_html)
 
     def _display_image(self, path: Path) -> None:
         """Load and display the token image, with robust fallback for webp/png and plugin edge cases."""
