@@ -71,77 +71,148 @@ def convert_speed(speed: dict[str, Any]) -> dict[str, Any]:
 # ---------- 5eTools entry rendering & helper converters (NEW) ----------
 
 def _strip_5etools_tags(text: str) -> str:
-    """Roughly convert 5eTools {@tag|...} syntax into readable text.
-    Improved to handle damage and dice expressions.
+    """
+    Convert 5eTools {@tag ...} syntax into clean, readable display text.
+
+    This version correctly handles 2024 source references (XPHB, XDMG, XMM, etc.)
+    that previously leaked through as literal "XPHB" strings in spell lists,
+    traits, and actions. It is the single most important function for
+    producing high-quality committed bestiary data.
     """
     import re
 
     if not isinstance(text, str):
         return str(text)
 
+    # Known 5eTools source abbreviations that should never appear in user text.
+    # When they appear as a pipe segment we discard them and use surrounding context.
+    known_sources = {
+        "XPHB", "XDMG", "XMM",           # 2024 core (most common culprits)
+        "PHB", "DMG", "MM", "SCAG", "VGM", "MTF", "EGW", "TCE", "CM",
+        "IDRotF", "RMR", "MFF", "BAM", "GOS", "HftT", "HotDQ", "LMoP",
+        "OotA", "PotA", "RoT", "SKT", "TftYP", "ToA", "WDH", "WDMM",
+        "BGDiA", "DC", "DIP", "ESK", "GoS", "HftS", "IMR", "LR", "MOT",
+        "NRH", "RMBRE", "SJA", "SLW", "TCE", "WBtW", "WbtW", "AAG", "AI",
+        "AVT", "BMT", "BGG", "CRC", "DND", "DSOT", "FTD", "JttRC", "KftGV",
+        "LLK", "MaBJoV", "MFF", "PaBTSO", "PWF", "RDR", "RMB", "SADS",
+        "SCC", "SNC", "TBoMT", "ToD", "ToFW", "UATFR", "UAWGE", "VRGR",
+        "XGE", "XMtS", "ZDMG", "ZPHB",  # some additional/older/homebrew mirrors
+    }
+
+    def _is_source_code(s: str) -> bool:
+        s = s.strip()
+        return s.upper() in known_sources or re.match(r'^[A-Z]{2,6}$', s) is not None and len(s) <= 6
+
     def replace_tag(match: re.Match) -> str:
         content = match.group(0)
 
-        # Handle {@damage 8d8 force} or {@damage 8d8|force}
+        # --- Special fast-paths for high-frequency tags (preserve existing good behavior) ---
         if '{@damage ' in content:
             inner = content.replace('{@damage ', '').rstrip('}')
-            # Try to extract formula and type
-            parts = inner.split('|')
-            formula = parts[0].strip()
-            dmg_type = parts[1].strip() if len(parts) > 1 else ""
-            if dmg_type:
-                return f"{formula} {dmg_type}"
-            return formula
+            parts = [p.strip() for p in inner.split('|') if p.strip()]
+            if len(parts) >= 2:
+                return f"{parts[0]} {parts[1]}"
+            return parts[0] if parts else ""
 
-        # Handle {@dice 8d8}
         if '{@dice ' in content:
             inner = content.replace('{@dice ', '').rstrip('}')
-            return inner.split('|')[0].strip()
+            parts = [p.strip() for p in inner.split('|') if p.strip()]
+            return parts[0] if parts else ""
 
-        if '|' in content:
-            inner = content.split('|')[-1].rstrip('}')
-            return inner
         if '{@dc ' in content:
-            return content.replace('{@dc ', 'DC ').rstrip('}')
+            return "DC " + content.replace('{@dc ', '').rstrip('}').split('|')[0].strip()
+
         if '{@hit ' in content:
-            return content.replace('{@hit ', '+').rstrip('}')
+            val = content.replace('{@hit ', '').rstrip('}').split('|')[0].strip()
+            return "+" + val if not val.startswith(('+', '-')) else val
 
-        # Handle common tags like {@spell Foo Bar}, {@item Wand}, {@condition Blinded}, etc.
-        tag_match = re.match(r'\{@(\w+)\s+(.+?)\}$', content)
-        if tag_match:
-            tag = tag_match.group(1).lower()
-            rest = tag_match.group(2).strip()
-
-            # Special handling for attack type abbreviations used in 5eTools
-            if tag == "atk":
-                atk_map = {
-                    "mw": "Melee Weapon Attack",
-                    "rw": "Ranged Weapon Attack",
-                    "ms": "Melee Spell Attack",
-                    "rs": "Ranged Spell Attack",
-                    "ms,rs": "Melee or Ranged Spell Attack",
-                    "mw,rw": "Melee or Ranged Weapon Attack",
-                    "m": "Melee Attack",
-                    "r": "Ranged Attack",
-                }
-                return atk_map.get(rest.lower(), rest)
-
-            return rest
-
-        # Handle {@recharge 4}, {@recharge 4-6}, {@recharge 5|6}, etc.
         if '{@recharge' in content:
             m = re.search(r'\{@recharge\s*([^}]+)\}', content)
             if m:
-                val = m.group(1).strip()
-                # Normalize "4-6" or "4|6" style
-                val = val.replace('|', '–').replace('-', '–')
+                val = m.group(1).strip().replace('|', '–').replace('-', '–')
                 return f"(Recharge {val})"
 
-        # Last resort: remove the tag entirely
-        return re.sub(r'\{@[^}]+}', '', content)
+        # --- General intelligent tag parsing ---
+        # Remove the outer {@ ... }
+        inner = content[2:-1] if content.startswith('{@') and content.endswith('}') else content
+        # Split into tag name + arguments
+        if ' ' not in inner:
+            return ""  # malformed
+        tag, rest = inner.split(' ', 1)
+        tag = tag.lower()
+        segments = [s.strip() for s in rest.split('|') if s.strip()]
 
+        # Special attack abbreviation handling (rare but important)
+        if tag == "atk" and segments:
+            atk_map = {
+                "mw": "Melee Weapon Attack", "rw": "Ranged Weapon Attack",
+                "ms": "Melee Spell Attack", "rs": "Ranged Spell Attack",
+                "ms,rs": "Melee or Ranged Spell Attack", "mw,rw": "Melee or Ranged Weapon Attack",
+                "m": "Melee Attack", "r": "Ranged Attack",
+            }
+            return atk_map.get(segments[0].lower(), segments[0])
+
+        # For book references we want the nice title, not chapter numbers
+        if tag == "book" and segments:
+            # {@book Title|SOURCE|chapter|section} or {@book Title|SOURCE}
+            title = segments[0]
+            # If first segment looks like a source, try second
+            if _is_source_code(title) and len(segments) > 1:
+                title = segments[1]
+            return title
+
+        # The heart of the fix: filter out source codes from the segments.
+        # 5eTools convention: last segment is often a display override.
+        # Second segment is frequently the source.
+        clean_segments = [s for s in segments if not _is_source_code(s)]
+
+        if clean_segments:
+            # Prefer explicit display text when present (often the last clean segment).
+            # 5eTools frequently does: {@tag Main Name|SOURCE|Better Display Text}
+            candidate = clean_segments[-1]
+            # For a few tags the primary name is reliably first
+            if tag in ("creature", "spell", "item", "condition", "action",
+                       "variantrule", "skill", "sense", "feat", "race", "class"):
+                # Still allow a later display override if it's clearly better (longer or has spaces)
+                if len(clean_segments) > 1:
+                    last = clean_segments[-1]
+                    if len(last) > len(clean_segments[0]) or " " in last:
+                        candidate = last
+                    else:
+                        candidate = clean_segments[0]
+                else:
+                    candidate = clean_segments[0]
+            # Final safety: never return a bare source code
+            if _is_source_code(candidate):
+                candidate = clean_segments[0] if len(clean_segments) > 1 else ""
+            return candidate
+
+        # Fallback: last non-empty raw segment (should rarely trigger now)
+        if segments:
+            last = segments[-1]
+            return "" if _is_source_code(last) else last
+
+        return ""
+
+    # First pass: replace all tags intelligently
     text = re.sub(r'\{@[^}]+}', replace_tag, text)
+
+    # Second pass: remove any stray braces and clean up
     text = re.sub(r'[{}]', '', text)
+
+    # Third pass (critical belt-and-suspenders): nuke any remaining bare source codes
+    # that may have been written as the *value* in previous bad imports.
+    # This also cleans cases where a whole spell entry became "XPHB".
+    for code in ["XPHB", "XDMG", "XMM"]:
+        # Remove the bare word when it appears as a whole token in lists or sentences
+        text = re.sub(rf'\b{code}\b', '', text)
+
+    # Collapse multiple spaces and trim
+    text = re.sub(r'\s+', ' ', text).strip()
+    # Clean up cases like "the  condition" left by removed source codes next to words
+    text = re.sub(r'\bthe\s+condition\b', 'the condition', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s+([.,;:])', r'\1', text)
+
     return text.strip()
 
 
@@ -162,7 +233,6 @@ def render_entries(entries: Any) -> str:
             for d in entries["damage"]:
                 avg = d.get("average")
                 formula = d.get("formula") or d.get("dice")
-                dmg_type = d.get("type", "")
                 if avg is not None and formula:
                     damage_parts.append(f"{avg} ({formula})")
                 elif formula:

@@ -321,13 +321,15 @@ def test_hp_editing_flow(qtbot, real_service, qapp):
     driver.select_by_index(0)
 
     initial_hp = driver.get_hp_for("Orc #1")
-    assert initial_hp == 15
+    # Do not hard-code bestiary HP (it can change with data regeneration).
+    # Verify relative edits instead.
+    assert initial_hp > 0
 
     driver.adjust_hp(-5)
-    assert driver.get_hp_for("Orc #1") == 10
+    assert driver.get_hp_for("Orc #1") == initial_hp - 5
 
     driver.adjust_hp(3)
-    assert driver.get_hp_for("Orc #1") == 13
+    assert driver.get_hp_for("Orc #1") == initial_hp - 2
 
 
 def test_conditions_button_text_updates(qtbot, real_service, qapp):
@@ -351,6 +353,7 @@ def test_multi_round_with_conditions_and_hp(qtbot, real_service, qapp):
 
     # Round 1 - damage the orc
     driver.select_by_name("Orc #1")
+    hp_before = driver.get_hp_for("Orc #1")
     driver.adjust_hp(-6)
 
     driver.toggle_condition_direct("Poisoned")
@@ -362,7 +365,7 @@ def test_multi_round_with_conditions_and_hp(qtbot, real_service, qapp):
     assert current in ["Cleric", "Orc #1"]
 
     assert "Poisoned" in driver.get_conditions_for("Orc #1")
-    assert driver.get_hp_for("Orc #1") == 9
+    assert driver.get_hp_for("Orc #1") == max(0, hp_before - 6)
 
 
 def test_context_menu_rename_and_edit_initiative(qtbot, real_service, qapp):
@@ -413,7 +416,7 @@ def test_stat_block_panel_direct_hp_set(qtbot, real_service, qapp):
     driver.select_by_index(0)
 
     initial_hp = driver.get_hp_for("Orc #1")
-    assert initial_hp == 15
+    assert initial_hp > 0
 
     driver.set_hp_direct(22)
     driver.refresh()
@@ -449,13 +452,13 @@ def test_context_menu_quick_hp_adjust(qtbot, real_service, qapp):
     driver.select_by_index(0)
 
     initial = driver.get_hp_for("Orc #1")
-    assert initial == 15
+    assert initial > 0
 
     # Simulate menu action
     driver.simulate_context_menu_action(0, "+1 HP")
     driver.refresh()
 
-    assert driver.get_hp_for("Orc #1") == 16
+    assert driver.get_hp_for("Orc #1") == initial + 1
 
 
 def test_stat_block_panel_has_hp_controls_section(qtbot, real_service, qapp):
@@ -600,7 +603,7 @@ def test_full_combat_round_simulation(qtbot, real_service, qapp):
     # Verify state after one full round
     assert driver.get_entity_count() == 3
     assert "Poisoned" in driver.get_conditions_for("Orc #1")
-    assert driver.get_hp_for("Orc #1") < 15
+    assert driver.get_hp_for("Orc #1") < initial_hp
     assert driver.get_current_turn_name() is not None  # Someone should be acting
 
     # Second round - kill the goblin

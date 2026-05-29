@@ -10,9 +10,23 @@ It is deliberately free of Qt dependencies.
 """
 
 import re
-from typing import Any
 
 from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+
+
+def _clean_display_text(text: str) -> str:
+    """Defensive cleaner for any text that may contain 5eTools tags or leaked source codes.
+    Used in addition to the importer-time cleaning for custom monsters and robustness.
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    # Remove any remaining 5eTools tags
+    text = re.sub(r'\{@[^}]+}', '', text)
+    # Nuke bare source codes that somehow reached the UI layer
+    for code in ("XPHB", "XDMG", "XMM"):
+        text = re.sub(rf'\b{code}\b', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 
 class MonsterStatBlockRenderer:
@@ -223,7 +237,7 @@ class MonsterStatBlockRenderer:
         """Render a section defensively. If it fails, we skip it instead of breaking the whole stat block."""
         try:
             func(parts)
-        except Exception as e:
+        except Exception:
             # In production we'd log this. For now, we silently skip the bad section
             # so the rest of the monster stat block still renders.
             # You can uncomment the next line during debugging:
@@ -239,8 +253,8 @@ class MonsterStatBlockRenderer:
             name = e.get("name", section_title.rstrip("s")) if isinstance(e, dict) else str(e)
             desc = e.get("description", "") if isinstance(e, dict) else ""
             # Defensive: handle dict descriptions etc.
-            name = re.sub(r'\{@[^}]+\}', '', str(name)).strip()
-            desc = re.sub(r'\{@[^}]+\}', '', str(desc)).strip()
+            name = _clean_display_text(name)
+            desc = _clean_display_text(desc)
             parts.append(f"<b>{name}.</b> {desc}")
 
     def _append_actions_section(self, parts: list[str], actions: list) -> None:
@@ -255,8 +269,8 @@ class MonsterStatBlockRenderer:
                 continue
             name = a.get("name", "Action")
             desc = a.get("description", "").strip()
-            name = re.sub(r'\{@[^}]+\}', '', str(name)).strip()
-            desc = re.sub(r'\{@[^}]+\}', '', str(desc)).strip()
+            name = _clean_display_text(name)
+            desc = _clean_display_text(desc)
 
             # Smart formatting for attack actions (same logic as before)
             lower_desc = desc.lower()
@@ -288,7 +302,7 @@ class MonsterStatBlockRenderer:
         for entry in sc:
             header = entry.get("header", "")
             if header:
-                header = re.sub(r'\{@[^}]+\}', '', header).strip()
+                header = _clean_display_text(header)
                 parts.append(f"<i>{header}</i>")
 
             spells = entry.get("spells", {}) or {}
