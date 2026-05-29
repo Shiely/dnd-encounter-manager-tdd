@@ -58,3 +58,20 @@ See `docs/Development_Process.md` for guidelines on when to update the committed
 - These scripts are primarily for maintainers.
 - The committed `monsters.json` is what most contributors and users will work with.
 - Improvements to the importer logic should be committed promptly so that future regenerations benefit everyone.
+
+## Optional: Using `just`
+
+For convenience, a `justfile` is provided with common commands:
+
+```bash
+just run          # Run the application
+just test         # Run all tests
+just test-ui      # Run only UI tests
+just sync         # Sync dependencies
+just validate     # Validate bestiary data quality
+just check        # Run quick validation checks
+```
+
+`just` is **completely optional**. You can always use the equivalent `uv run` commands instead.
+
+To install `just`, see: https://github.com/casey/just#installation

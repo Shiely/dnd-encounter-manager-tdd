@@ -32,3 +32,16 @@ The `monsters.json` file is the canonical data. Improvements to the importer sho
 ## Questions?
 
 Feel free to open an issue. We're still evolving the project and welcome feedback on the architecture and process.
+
+## Optional: Using `just`
+
+If you prefer shorter commands, you can optionally install [`just`](https://github.com/casey/just) and use it instead of typing full `uv run` commands.
+
+Example commands:
+- `just run` — Run the application
+- `just test` — Run all tests
+- `just sync` — Sync dependencies
+- `just validate` — Check bestiary data quality
+- `just check` — Run quick validation + UI tests
+
+**Note:** `just` is completely optional. You can always use the normal `uv run` commands instead.

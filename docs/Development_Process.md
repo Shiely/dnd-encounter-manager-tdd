@@ -66,3 +66,11 @@ uv run python run_ui.py
 ```
 
 ...should get a high-quality experience with clean monster data and correct rendering behavior.
+
+## Optional Tooling
+
+We provide a `justfile` with convenient shortcuts (e.g. `just run`, `just test`, `just validate`). 
+
+**This is completely optional.** You are not required to install `just`. All functionality is also available using normal `uv run` commands.
+
+See `CONTRIBUTING.md` for more details.
