@@ -69,8 +69,10 @@ uv run python run_ui.py
 
 ## Optional Tooling
 
-We provide a `justfile` with convenient shortcuts (e.g. `just run`, `just test`, `just validate`). 
+We provide a `justfile` with convenient shortcuts (e.g. `just run`, `just test`, `just test-ui`, `just validate`). 
 
 **This is completely optional.** You are not required to install `just`. All functionality is also available using normal `uv run` commands.
 
-See `CONTRIBUTING.md` for more details.
+GUI tests are headless by default (`uv run pytest tests/unit/ui/ -q`).
+
+See `CONTRIBUTING.md` and the main `README.md` for details.

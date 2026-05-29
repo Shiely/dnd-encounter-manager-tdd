@@ -23,6 +23,20 @@ The committed `data/srd/monsters.json` is the data you will work with by default
   - Make sure all runtime-affecting changes (especially anything in `utilities/`, the renderer, or data processing) are committed.
   - Verify behavior in a fresh clone when possible.
 
+### Running Tests Locally
+
+GUI tests are configured to run **headless by default** (no windows appear).
+
+```powershell
+# Normal tests (fast)
+uv run pytest -q
+
+# GUI tests only (headless)
+uv run pytest tests/unit/ui/ -q
+```
+
+See the main [README.md](README.md) for more details and Windows PowerShell examples.
+
 ## Bestiary / Data Changes
 
 See the "Bestiary Data Policy" section in [docs/Development_Process.md](docs/Development_Process.md).
@@ -39,9 +53,10 @@ If you prefer shorter commands, you can optionally install [`just`](https://gith
 
 Example commands:
 - `just run` — Run the application
-- `just test` — Run all tests
+- `just test` — Run all tests (non-UI)
+- `just test-ui` — Run only GUI tests (headless)
 - `just sync` — Sync dependencies
 - `just validate` — Check bestiary data quality
 - `just check` — Run quick validation + UI tests
 
-**Note:** `just` is completely optional. You can always use the normal `uv run` commands instead.
+**Note:** `just` is completely optional. You can always use the normal `uv run` commands instead (recommended for new contributors). See the main README for the direct equivalents.

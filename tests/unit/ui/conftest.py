@@ -1,5 +1,11 @@
 # tests/unit/ui/conftest.py
 # Fixtures for GUI tests
+#
+# IMPORTANT: Force headless/offscreen Qt platform so GUI tests never pop up
+# real windows during normal development or CI runs.
+# This must be set *before* any PySide6/Qt imports happen.
+import os
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from unittest.mock import Mock

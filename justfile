@@ -10,9 +10,11 @@ run:
 test:
     uv run pytest
 
-# Run only the UI-related tests (faster)
+# Run only the UI-related tests (faster).
+# Uses offscreen Qt platform so no windows ever pop up.
+# Direct equivalent (no just needed): uv run pytest tests/unit/ui/ -q
 test-ui:
-    uv run pytest tests/unit/ui/ -q
+    QT_QPA_PLATFORM=offscreen uv run pytest tests/unit/ui/ -q
 
 # Sync dependencies (including dev tools)
 sync:

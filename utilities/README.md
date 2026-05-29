@@ -65,13 +65,20 @@ For convenience, a `justfile` is provided with common commands:
 
 ```bash
 just run          # Run the application
-just test         # Run all tests
-just test-ui      # Run only UI tests
+just test         # Run all tests (non-UI)
+just test-ui      # Run only GUI tests (headless by default)
 just sync         # Sync dependencies
 just validate     # Validate bestiary data quality
 just check        # Run quick validation checks
 ```
 
-`just` is **completely optional**. You can always use the equivalent `uv run` commands instead.
+**Direct equivalents (no `just` needed):**
+
+```powershell
+uv run pytest -q                    # Normal tests
+uv run pytest tests/unit/ui/ -q     # GUI tests (headless)
+```
+
+`just` is **completely optional**. Direct `uv run` commands work on any fresh clone.
 
 To install `just`, see: https://github.com/casey/just#installation

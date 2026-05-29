@@ -189,10 +189,19 @@ QApplication.instance().exec()
 "
 ```
 
-**For headless / CI testing** (already used by pytest):
+**Running GUI tests (headless by default)**
 
-```bash
-QT_QPA_PLATFORM=offscreen uv run pytest tests/unit/ui/ -q
+GUI tests use `pytest-qt` and are configured to run **headless** — no windows pop up:
+
+```powershell
+# Recommended (works on fresh clone)
+uv run pytest tests/unit/ui/ -q
+```
+
+On Windows PowerShell, the explicit form also works:
+
+```powershell
+$env:QT_QPA_PLATFORM="offscreen"; uv run pytest tests/unit/ui/ -q
 ```
 
 ### Running the Full Test Suite + Lint

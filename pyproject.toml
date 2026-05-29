@@ -36,6 +36,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/dnd_encounter --cov-report=term-missing -q"
+# Make GUI tests headless by default (works together with the early
+# os.environ set in tests/unit/ui/conftest.py).
+qt_qpa_platform = "offscreen"
 
 [tool.mypy]
 python_version = "3.12"

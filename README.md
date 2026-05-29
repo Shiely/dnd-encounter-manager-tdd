@@ -105,6 +105,26 @@ This uses the exact same logic as the app and tells you exactly which URL succee
 
 **Note**: We deliberately do **not** ship the full token collection (hundreds of MB). Tokens are fetched on-demand only for the monsters you actually use. This keeps the repo small and fast to clone.
 
+## Running Tests
+
+All tests use `pytest`. **GUI tests run headless by default** — no windows pop up when you run them.
+
+```powershell
+# Fast: run the normal test suite (UI tests are ignored for speed)
+uv run pytest -q
+
+# Run the GUI / pytest-qt tests (guaranteed headless)
+uv run pytest tests/unit/ui/ -q
+```
+
+On Windows PowerShell, the explicit form also works if needed:
+
+```powershell
+$env:QT_QPA_PLATFORM="offscreen"; uv run pytest tests/unit/ui/ -q
+```
+
+`just` is completely optional (see [CONTRIBUTING.md](CONTRIBUTING.md)). The commands above work on a fresh clone with no extra tools.
+
 Built with Grok — May 2026
 ## Documentation & Process
 
