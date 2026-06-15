@@ -66,17 +66,23 @@ class EncounterService:
             undo_available=not self.undo_stack.is_empty(),
         )
 
-    def add_monster(self, monster_id: str):
-        cmd = AddEntityCommand(
-            encounter=self.encounter,
-            monster_repo=self.monster_repo,
-            monster_id=monster_id,
-            dice_roller=self.dice_roller,
-            publisher=self.publisher,
-        )
-        cmd.execute()
-        self.undo_stack.push(cmd)
-        self.encounter.sort_by_initiative()  # <-- ensure correct order
+    def add_monster(self, monster_id: str, count: int = 1):
+        """Add one or more of the same monster. count > 1 performs count independent AddEntityCommand
+        executions so each gets its own initiative (d20 + dex) and HP (roll_expression or static) rolls.
+        Backward compatible: count=1 (default) produces identical observable behavior to pre-Phase-1
+        (same # of entities, same undo stack depth per add, same display names for singles, same DTOs).
+        """
+        for _ in range(max(1, int(count))):
+            cmd = AddEntityCommand(
+                encounter=self.encounter,
+                monster_repo=self.monster_repo,
+                monster_id=monster_id,
+                dice_roller=self.dice_roller,
+                publisher=self.publisher,
+            )
+            cmd.execute()
+            self.undo_stack.push(cmd)
+        self.encounter.sort_by_initiative()  # <-- ensure correct order (after all batch appends)
         self.encounter_repo.save(self.encounter)
         return self.encounter
 

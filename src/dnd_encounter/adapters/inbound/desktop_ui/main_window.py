@@ -195,9 +195,11 @@ class MainWindow(QMainWindow):
             monster_id = dialog.get_selected_monster_id()
             if monster_id:
                 try:
-                    self._service.add_monster(monster_id)
+                    # Read quantity from dialog (Phase 1 batch); default 1 for all pre-phase call sites / qty=1 path
+                    qty = dialog.get_quantity() if hasattr(dialog, "get_quantity") else 1
+                    self._service.add_monster(monster_id, count=qty)
                     self._refresh_state()
-                    # Auto-select the newly added entity so Remove/HP/etc. work immediately
+                    # Auto-select the newly added entity (for qty>1 this is the last after sort; for qty=1 identical to pre)
                     state = self._service.get_state()
                     if state.entities:
                         self._on_entity_selected(state.entities[-1].instance_id)

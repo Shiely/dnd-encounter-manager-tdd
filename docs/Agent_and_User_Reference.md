@@ -23,7 +23,7 @@ This document combines the key information from Parts 1–4 into one compact ref
 
 ## 2. Core Features
 
-- Add monsters (from SRD or imported JSON)
+- Add monsters (from SRD or imported JSON) — supports batch addition via Quantity selector (1–20). Each copy receives independent initiative and HP rolls.
 - Add custom players
 - Automatic initiative rolling + 5-step tie-breaking
 - Live HP editing with clamping and auto-remove at 0 HP
@@ -117,6 +117,7 @@ UI **never** touches domain entities directly.
 - 18+ professional UI tests passing for the new architecture (pytest-qt, headless).
 - Bootstrap with 60s auto-save timer + platformdirs persistence wiring.
 - Ruff + mypy clean on the new code paths.
+- **Phase 1 — Batch Add Monsters**: Quantity selector (1–20) in AddMonsterDialog with independent per-copy initiative and HP rolls via repeated `AddEntityCommand` executions. Full TDD + block9 verification + human testing passed.
 
 **Current Gaps (what the next phase must address):**
 - Keyboard shortcuts not yet wired in the new `MainWindow`.

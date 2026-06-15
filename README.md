@@ -27,6 +27,7 @@ Following strict TDD: Keyboard shortcuts first, then context menus, richer StatB
 
 ## Recent Major Features
 
+- **Batch Add Monsters (Phase 1)** — In the Add Monster dialog you can now select a Quantity (1–20, default 1). Adding N copies of the same monster type creates N separate entities, each with its own independent initiative roll (d20 + DEX modifier) and HP roll (from hit_dice expression or static value). Entities are properly named (e.g. "Goblin #1", "Goblin #2") and fully support per-entity Undo. Single-add behavior is unchanged.
 - **Custom Monster Creator** — Create and save your own monsters directly from the Add Monster dialog. All `MonsterDefinition` fields are supported (only Name + HP are required).
 - **Rich StatBlockPanel** — Displays full monster data including ability scores, saving throws, skills, resistances, traits, actions, legendary actions, spellcasting, etc. **Plus official-style monster tokens/images**.
 - **Monster Token Images (on-demand)** — The app now automatically downloads high-quality tokens from the official 5e.tools site (with underscore + %20 name variants + mirror fallback) the first time you view or add a monster. Robust background downloading with local caching, preloading for the entire encounter, and reliable display even when adding many creatures at once.

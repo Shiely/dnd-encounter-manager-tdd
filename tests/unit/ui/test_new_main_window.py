@@ -467,3 +467,44 @@ def test_keyboard_shortcuts_are_installed_on_construction(qtbot, new_stub_servic
     # We also attached shortcuts directly to QAction objects in the menu
     # (verified indirectly: the menu construction succeeded without error)
     assert window.menuBar() is not None
+
+
+# --- Phase 1 TDD: Batch add quantity selector (red tests added before any production changes) ---
+
+def test_add_monster_dialog_has_quantity_selector_default_1_to_20(qtbot, new_stub_service):
+    """Red test (pre-prod): Dialog must have QSpinBox quantity selector, default 1, range 1-20+."""
+    from dnd_encounter.adapters.inbound.desktop_ui.add_monster_dialog import AddMonsterDialog
+
+    dialog = AddMonsterDialog(new_stub_service)
+    qtbot.addWidget(dialog)
+
+    # Core new behavior targeted: quantity selector exposed with sensible defaults
+    # (duck-type check avoids unused-import lint on the QSpinBox symbol itself)
+    assert hasattr(dialog, "quantity_spin"), "AddMonsterDialog must grow a quantity_spin for batch add"
+    spin = dialog.quantity_spin
+    assert spin.value() == 1, "Default quantity must be 1 (backward compat for single add)"
+    assert spin.minimum() == 1
+    assert spin.maximum() >= 20, "Sensible upper range for batch (e.g. 1-20)"
+
+
+def test_add_monster_dialog_get_quantity_and_selection_unchanged_for_custom(qtbot, new_stub_service):
+    """Red test (pre-prod): get_selected_monster_id continues to work; new get_quantity exposes chosen count; custom creation path unaffected."""
+    from dnd_encounter.adapters.inbound.desktop_ui.add_monster_dialog import AddMonsterDialog
+
+    dialog = AddMonsterDialog(new_stub_service)
+    qtbot.addWidget(dialog)
+
+    # Select via list (existing behavior) + set quantity
+    dialog.monster_list.setCurrentRow(0)
+    dialog.quantity_spin.setValue(3)
+    dialog._on_add()
+
+    assert dialog.get_selected_monster_id() == "goblin"
+    # The getter for quantity must exist and return the chosen value (core new surface)
+    assert dialog.get_quantity() == 3
+
+    # Existing single behavior must be default (no test breakage for pre-phase call sites)
+    # Re-create to check default path
+    dialog2 = AddMonsterDialog(new_stub_service)
+    qtbot.addWidget(dialog2)
+    assert dialog2.get_quantity() == 1

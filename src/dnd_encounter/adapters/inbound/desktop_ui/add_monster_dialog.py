@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -52,6 +53,16 @@ class AddMonsterDialog(QDialog):
         self.count_label = QLabel()
         self.count_label.setStyleSheet("color: #666; font-size: 11px;")
         layout.addWidget(self.count_label)
+
+        # Phase 1: quantity selector (additive; default 1 preserves all pre-phase single-add behavior)
+        qty_row = QHBoxLayout()
+        qty_row.addWidget(QLabel("Quantity:"))
+        self.quantity_spin = QSpinBox()
+        self.quantity_spin.setRange(1, 20)
+        self.quantity_spin.setValue(1)
+        qty_row.addWidget(self.quantity_spin)
+        qty_row.addStretch()
+        layout.addLayout(qty_row)
 
         # The monster list
         self.monster_list = QListWidget()
@@ -154,6 +165,12 @@ class AddMonsterDialog(QDialog):
 
     def get_selected_monster_id(self) -> str | None:
         return self.selected_monster_id
+
+    def get_quantity(self) -> int:
+        """Return the chosen quantity (default 1 for backward compatibility)."""
+        if hasattr(self, "quantity_spin"):
+            return self.quantity_spin.value()
+        return 1
 
     def _on_create_custom(self):
         """Open the monster creation form."""

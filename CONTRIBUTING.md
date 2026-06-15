@@ -12,7 +12,8 @@ This is the most important rule we've learned. Please read [docs/Development_Pro
 
 1. Clone the repo
 2. Run `uv sync --dev`
-3. Run `uv run python run_ui.py`
+3. (Optional, for AI-assisted outer-loop work) Run `.\scripts\setup-flywheel.ps1` — see `AGENTS.md`
+4. Run `uv run python run_ui.py`
 
 The committed `data/srd/monsters.json` is the data you will work with by default.
 

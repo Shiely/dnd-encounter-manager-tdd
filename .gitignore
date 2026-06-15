@@ -139,6 +139,9 @@ cython_debug/
 .DS_Store
 Thumbs.db
 
+# Ouroboros Flywheel prompt infrastructure (clone locally; do not commit)
+.flywheel/
+
 # Large external 5eTools clones (do not commit the full source repos)
 data/5etools-src/
 data/5etools-img/

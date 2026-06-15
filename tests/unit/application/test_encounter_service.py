@@ -172,3 +172,89 @@ def test_get_state_populates_current_turn_and_active():
         assert state.entities[1].is_active is True
 
         # Note: e2 (DeadMonster) is inactive and correctly filtered out of the state sent to UI
+
+
+# --- Phase 1 TDD red tests (added before touching non-test production code) ---
+
+class VaryingDiceRoller:
+    """Deterministic roller so batch test can prove independent rolls (different init + HP) without probability."""
+    def __init__(self):
+        self._d20 = 5
+        self._hp_base = 7
+
+    def roll_d20(self) -> int:
+        v = self._d20
+        self._d20 += 3  # produce distinct across calls
+        return v
+
+    def roll_expression(self, expression: str) -> int:
+        v = self._hp_base
+        self._hp_base += 2
+        return v
+
+
+def test_add_monster_count_n_produces_n_distinct_entities_with_independent_rolls():
+    """Red test (pre-prod): add_monster(monster_id, count=N) must execute N independent AddEntityCommands.
+    Each must roll its own initiative (d20 + dex) and HP (roll_expression or fallback), yielding distinct values
+    and correct sequential display names. count=1 path remains unchanged (tested elsewhere).
+    """
+    encounter = Encounter(encounter_id="test")
+    from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+    from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
+    from dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
+
+    goblin = MonsterDefinition(
+        id="goblin",
+        name="Goblin",
+        size="Small",
+        type_="humanoid",
+        alignment="neutral evil",
+        armor_class=15,
+        hit_points=7,
+        hit_dice="2d6",
+        speed={"walk": 30},
+        ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),  # dex 14 -> +2 mod
+        challenge_rating=ChallengeRating("1/4"),
+        xp=50,
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        monster_repo = JsonMonsterRepository(path=Path(tmpdir) / "monsters.json")
+        monster_repo.upsert(goblin)
+        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "encounter.json")
+        undo_stack = InMemoryUndoStack()
+        dice_roller = VaryingDiceRoller()
+        publisher = EventPublisher()
+
+        service = EncounterService(
+            encounter=encounter,
+            monster_repo=monster_repo,
+            encounter_repo=encounter_repo,
+            undo_stack=undo_stack,
+            dice_roller=dice_roller,
+            publisher=publisher,
+        )
+
+        # This call will be red until service extended (signature + loop behavior)
+        # Use positional for count to also cover
+        result = service.add_monster("goblin", 3)
+
+        # Must produce exactly 3
+        assert len(result.entities) == 3
+        names = [e.display_name for e in result.entities]
+        # Names are assigned at creation time (#1 then #2 then #3); sort_by_initiative (highest init first) reorders the list
+        # but does not change the display_name values. Use set or sorted for order-independent check.
+        assert set(names) == {"Goblin #1", "Goblin #2", "Goblin #3"}
+        assert sorted(names) == ["Goblin #1", "Goblin #2", "Goblin #3"]
+
+        # Independent rolls => different initiative and current_hp (core requirement)
+        inits = [e.initiative for e in result.entities]
+        hps = [e.current_hp for e in result.entities]
+        assert len(set(inits)) == 3, f"Expected 3 distinct initiatives from independent rolls, got {inits}"
+        assert len(set(hps)) == 3, f"Expected 3 distinct HPs from independent rolls, got {hps}"
+
+        # Also verify undo stack has 3 independent cmds (granular undo, same as pre-phase multi-single-add)
+        assert undo_stack.depth() == 3  # or len of internal if exposed; using existing depth helper in stub
+
+        # Pre-existing count=1 behavior must still work (call site compat)
+        # (separate call re-uses same setup but we already mutated; simple re-assert shape covered by other test)
