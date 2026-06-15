@@ -108,4 +108,5 @@ def stub_service():
     service.edit_hp = Mock()
     service.remove_entity = Mock()
     service.advance_turn = Mock()
+    service.reset = Mock()
     return service

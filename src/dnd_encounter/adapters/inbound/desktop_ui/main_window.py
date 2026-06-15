@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
         self.sidebar.edit_initiative_requested.connect(self._on_edit_initiative_requested)
         self.sidebar.conditions_requested.connect(self._on_conditions_requested)
         self.sidebar.hp_adjust_requested.connect(self._on_hp_adjusted)
+        # Phase 2: wire the new reset action (sidebar button + menu will both use same handler)
+        self.sidebar.reset_requested.connect(self._on_reset)
 
         # Basic top menu (minimal for now)
         self._create_menu_bar()
@@ -122,6 +124,16 @@ class MainWindow(QMainWindow):
         # More hotkeys for coverage
         QShortcut("Ctrl+M", self, activated=self._on_add_monster)
         QShortcut("Ctrl+P", self, activated=self._on_add_player)
+
+        # Phase 3 + bugfix: explicit QShortcut only for the *secondary* Ctrl+Right accelerator.
+        # Primary "Space" lives solely on the Advance Turn QAction (setShortcut + ApplicationShortcut
+        # context in _create_menu_bar). Having a parallel QShortcut(Qt.Key_Space) *in addition to*
+        # the QAction caused "QAction::event: Ambiguous shortcut overload: Space" warnings on every
+        # physical keypress and unreliable dispatch (especially with focused child widgets).
+        # The list view's ignore (subclass + eventFilter on view+viewport) + the action's
+        # ApplicationShortcut now provide the reliable global-advance-when-list-focused behavior.
+        sc_ctrl_right = QShortcut(Qt.CTRL | Qt.Key_Right, self, activated=self._on_advance_turn)
+        sc_ctrl_right.setContext(Qt.ShortcutContext.ApplicationShortcut)
 
         # Initial load
         self._refresh_state()
@@ -165,12 +177,19 @@ class MainWindow(QMainWindow):
         self.setMenuBar(menubar)
 
         file_menu = menubar.addMenu("File")
-        file_menu.addAction("Add Monster", self._on_add_monster)
-        file_menu.addAction("Add Player", self._on_add_player)
+        add_monster_action = file_menu.addAction("Add Monster", self._on_add_monster)
+        add_monster_action.setShortcut("Ctrl+M")
+        add_player_action = file_menu.addAction("Add Player", self._on_add_player)
+        add_player_action.setShortcut("Ctrl+P")
         file_menu.addSeparator()
 
         advance_action = file_menu.addAction("Advance Turn", self._on_advance_turn)
         advance_action.setShortcut("Space")
+        # ApplicationShortcut context ensures the menu action's "Space" shortcut can fire even when
+        # a child like the sidebar QListView has focus (combined with the list's Space-ignore filter).
+        # This is now the *sole* registration for the primary Space key (no parallel QShortcut),
+        # eliminating "Ambiguous shortcut overload: Space" warnings.
+        advance_action.setShortcutContext(Qt.ShortcutContext.ApplicationShortcut)
 
         remove_action = file_menu.addAction("Remove Selected", self._on_remove_selected)
         remove_action.setShortcut("Delete")
@@ -178,6 +197,10 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         self.undo_action = file_menu.addAction("Undo", self._on_undo)
         self.undo_action.setShortcut("Ctrl+Z")
+
+        # Phase 2 reset action in File menu (matching the sidebar button; decisive clear for fresh encounter)
+        file_menu.addSeparator()
+        file_menu.addAction("Reset / New Encounter", self._on_reset)
 
         # Help menu - primary place for discovering keyboard shortcuts
         help_menu = menubar.addMenu("Help")
@@ -363,6 +386,28 @@ class MainWindow(QMainWindow):
         if self._service.can_undo():
             self._service.undo()
             self._refresh_state()
+
+    def _on_reset(self) -> None:
+        """Handle Reset / New Encounter (sidebar button or File menu).
+
+        Calls service reset (clears entities/round/turn/undo + persist),
+        then fully refreshes entire UI per deliverable 3:
+        - _current_instance_id = None
+        - StatBlockPanel cleared (title/content)
+        - Conditions button text reset to plain "Conditions"
+        - _refresh_state() -> emits state_changed (sidebar model + status, conditional stat,
+          conditions update, undo_action enable)
+        Results in visibly clean interface with no leftover data.
+        """
+        self._service.reset()
+        self._current_instance_id = None
+        # Explicit clears for full clean UI (stat + conditions); refresh will handle sidebar + rest
+        try:
+            self.stat_panel.refresh(None, None)
+        except Exception:
+            pass
+        self.btn_conditions.setText("Conditions")
+        self._refresh_state()
 
     def _on_global_hp_plus(self):
         if self._current_instance_id:

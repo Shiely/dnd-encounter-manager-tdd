@@ -258,3 +258,83 @@ def test_add_monster_count_n_produces_n_distinct_entities_with_independent_rolls
 
         # Pre-existing count=1 behavior must still work (call site compat)
         # (separate call re-uses same setup but we already mutated; simple re-assert shape covered by other test)
+
+
+# --- Phase 2 TDD red tests (added before touching non-test production code) ---
+
+def test_reset_clears_entities_round_undo_and_returns_clean_dto():
+    """Red test (pre-prod): EncounterService.reset() must atomically clear entities,
+    reset current_turn_index=0 and round_number=1, clear the undo stack, persist via repo,
+    and ensure get_state() returns clean EncounterStateDTO (0 entities, round=1, undo_available=false, no error).
+    """
+    encounter = Encounter(encounter_id="test-reset")
+    from dnd_encounter.domain.entities.monster_definition import MonsterDefinition
+    from dnd_encounter.domain.value_objects.ability_scores import AbilityScores
+    from dnd_encounter.domain.value_objects.challenge_rating import ChallengeRating
+
+    goblin = MonsterDefinition(
+        id="goblin",
+        name="Goblin",
+        size="Small",
+        type_="humanoid",
+        alignment="neutral evil",
+        armor_class=15,
+        hit_points=7,
+        hit_dice="2d6",
+        speed={"walk": 30},
+        ability_scores=AbilityScores(8, 14, 10, 10, 8, 8),
+        challenge_rating=ChallengeRating("1/4"),
+        xp=50,
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        monster_repo = JsonMonsterRepository(path=Path(tmpdir) / "monsters.json")
+        monster_repo.upsert(goblin)
+        encounter_repo = JsonEncounterRepository(path=Path(tmpdir) / "encounter.json")
+        undo_stack = InMemoryUndoStack()
+        dice_roller = DiceRoller()
+        publisher = EventPublisher()
+
+        service = EncounterService(
+            encounter=encounter,
+            monster_repo=monster_repo,
+            encounter_repo=encounter_repo,
+            undo_stack=undo_stack,
+            dice_roller=dice_roller,
+            publisher=publisher,
+        )
+
+        # Add some state (will be red until reset exists)
+        service.add_monster("goblin")
+        service.add_monster("goblin")
+        # advance to mutate round/turn (optional but exercises reset fully)
+        service.advance_turn()
+
+        pre_state = service.get_state()
+        assert len(pre_state.entities) >= 1
+        assert pre_state.undo_available is True
+        assert undo_stack.depth() >= 2
+
+        # This call + post-state will be red until service.reset implemented
+        service.reset()
+
+        state = service.get_state()
+        assert len(state.entities) == 0
+        assert state.round_number == 1
+        assert state.undo_available is False
+        assert state.error is None or state.error == ""
+        assert state.encounter_id == "test-reset"
+
+        # Internal encounter state also clean
+        assert len(service.encounter.entities) == 0
+        assert service.encounter.round_number == 1
+        assert service.encounter.current_turn_index == 0
+
+        # Undo stack cleared (no stale undos from prior encounter)
+        assert undo_stack.is_empty()
+        assert undo_stack.depth() == 0
+
+        # Subsequent get_state remains clean
+        state2 = service.get_state()
+        assert len(state2.entities) == 0
+        assert state2.round_number == 1

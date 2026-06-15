@@ -44,6 +44,33 @@ class EncounterService:
         for entity in self.encounter.entities:
             if not entity.is_active:
                 continue  # Removed entities are hidden from the UI (soft-delete for undo support)
+            # Phase 4: populate core stats additively for monsters (from bestiary via repo already on service).
+            # Non-monsters and missing defs get None (backward safe). This makes ac/speed/cr available
+            # on the DTO for StatBlockPanel (and any other consumer) without changing call sites.
+            # Phase 5: xp added in same seam (additive).
+            ac = None
+            speed = None
+            cr = None
+            xp = None
+            mid = getattr(entity, "monster_id", None)
+            if mid and self.monster_repo:
+                try:
+                    mdef = self.monster_repo.get(mid)
+                    if mdef:
+                        ac = getattr(mdef, "armor_class", None)
+                        spd = getattr(mdef, "speed", None) or {}
+                        # Format speed lightly for DTO (matches panel expectation; renderer has full too)
+                        if isinstance(spd, dict):
+                            walk = spd.get("walk")
+                            speed = f"{walk} ft." if walk else str(spd)
+                        else:
+                            speed = str(spd) if spd else None
+                        cr_obj = getattr(mdef, "challenge_rating", None)
+                        cr = getattr(cr_obj, "value", None) if cr_obj else None
+                        xp = getattr(mdef, "xp", None)
+                except Exception:
+                    pass  # never break get_state on data issues
+
             entities.append(
                 EntityRowDTO(
                     instance_id=entity.instance_id,
@@ -55,7 +82,11 @@ class EncounterService:
                     conditions=[c.value for c in entity.conditions],
                     is_current_turn=(entity is current),
                     is_active=entity.is_active,
-                    monster_id=getattr(entity, "monster_id", None),
+                    monster_id=mid,
+                    ac=ac,
+                    speed=speed,
+                    cr=cr,
+                    xp=xp,
                 )
             )
 
@@ -186,3 +217,27 @@ class EncounterService:
 
     def can_undo(self) -> bool:
         return not self.undo_stack.is_empty()
+
+    def reset(self) -> None:
+        """Reset / clear the encounter for a fresh start (new top TODO item (2)).
+
+        Atomically:
+        - Clears encounter.entities = []
+        - Resets current_turn_index = 0 and round_number = 1
+        - Drains the undo stack (no stale undos from prior encounter; does not call undo())
+        - Persists via encounter_repo
+        - Subsequent get_state() yields clean EncounterStateDTO (empty entities, round=1, undo_available=false, no error)
+
+        Additive only: no change to any pre-existing method signatures, returns, or observable behavior
+        for add/advance/undo/HP/conditions paths. Reset itself is decisive (not undoable).
+        """
+        self.encounter.entities = []
+        self.encounter.current_turn_index = 0
+        self.encounter.round_number = 1
+
+        # Drain undo stack without invoking command undo() (we want clean slate, not reversal)
+        while not self.undo_stack.is_empty():
+            self.undo_stack.pop()
+
+        self.encounter_repo.save(self.encounter)
+        # get_state() will now reflect the clean state on next call (no explicit publish needed)

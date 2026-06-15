@@ -150,6 +150,27 @@ class StatBlockPanel(QScrollArea):
         lines: list[str] = []
         lines.append(f"<b>Initiative:</b> {getattr(entity, 'initiative', '?')}")
 
+        # Phase 4: render core combat stats (AC, Speed, CR) from enriched EntityRowDTO (or repo path) in clean scannable format
+        # alongside existing live HP/conditions/title/token. Uses "•" per spec example for glance value.
+        # This is the minimal update to refresh (delegated renderer keeps full rich after <hr>).
+        # Phase 5: extend glance additively with XP (keeps P4 line co-present and unchanged for protected strings; "AC ... • CR ... • XP N").
+        ac = getattr(entity, "ac", None)
+        spd = getattr(entity, "speed", None)
+        crv = getattr(entity, "cr", None)
+        xp = getattr(entity, "xp", None)
+        if ac is not None or spd or crv or xp is not None:
+            core_parts = []
+            if ac is not None:
+                core_parts.append(f"AC {ac}")
+            if spd:
+                core_parts.append(f"Speed {spd}")
+            if crv:
+                core_parts.append(f"CR {crv}")
+            if xp is not None:
+                core_parts.append(f"XP {xp}")
+            if core_parts:
+                lines.append(" • ".join(core_parts))
+
         current_hp = getattr(entity, "current_hp", None)
         max_hp = getattr(entity, "max_hp", None)
 

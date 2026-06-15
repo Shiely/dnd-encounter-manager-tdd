@@ -182,4 +182,5 @@ def new_stub_service():
     service.toggle_condition = Mock()
     service.rename_entity = Mock()
     service.change_initiative = Mock()
+    service.reset = Mock()
     return service

@@ -118,13 +118,15 @@ UI **never** touches domain entities directly.
 - Bootstrap with 60s auto-save timer + platformdirs persistence wiring.
 - Ruff + mypy clean on the new code paths.
 - **Phase 1 — Batch Add Monsters**: Quantity selector (1–20) in AddMonsterDialog with independent per-copy initiative and HP rolls via repeated `AddEntityCommand` executions. Full TDD + block9 verification + human testing passed.
+- **Phase 2 — Reset / Clear Encounter State**: "Reset" button (sidebar near +M/+P + File menu) + EncounterService.reset() + full UI clear wiring. Strict TDD + block9 + human testing passed (clean slate for new encounter).
 
 **Current Gaps (what the next phase must address):**
-- Keyboard shortcuts not yet wired in the new `MainWindow`.
+- Keyboard shortcuts not yet wired in the new `MainWindow` (now Phase 3 top priority — see LEAD).
 - No context menu on the initiative list (right-click remove/rename/edit initiative).
 - `StatBlockPanel` is minimal (needs richer monster stat block display when `MonsterDefinition` data is available).
 - ConditionPanel integration is basic.
 - Full feature parity with the behavioral spec from Parts 1–3 (monster stat blocks, import flow, better HP editing UI).
+- (Reset / clear tool state completed in Phase 2 — see docs/TODO.md and LEAD.)
 
 ---
 
